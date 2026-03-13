@@ -402,7 +402,7 @@ export default function AddCardScreen() {
                 <Field
                   label="Card Number"
                   value={formatCardNumber(cardNumber)}
-                  onChangeText={(t) => setCardNumber(t.replace(/\D/g, ''))}
+                  onChangeText={(t) => setCardNumber(t.replace(/\D/g, '').slice(0, isAmex ? 15 : 16))}
                   placeholder={isAmex ? '3782 822463 10005' : '4242 4242 4242 4242'}
                   keyboardType="number-pad"
                   maxLength={cardNumberMaxLength(isAmex)}

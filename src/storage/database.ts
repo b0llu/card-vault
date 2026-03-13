@@ -145,6 +145,24 @@ export async function getCardById(id: string): Promise<Card | null> {
 }
 
 /**
+ * Updates an existing card (re-encrypts and writes updated data).
+ */
+export async function updateCard(id: string, updates: Omit<Card, 'id'>): Promise<void> {
+  const db = await getDB();
+  const now = new Date().toISOString();
+  const card: Card = {
+    ...updates,
+    id,
+    brand: detectCardBrand(updates.cardNumber),
+  };
+  const encryptedData = await encryptData(JSON.stringify(card));
+  await db.runAsync(
+    'UPDATE cards SET encrypted_data = ?, updated_at = ? WHERE id = ?',
+    [encryptedData, now, id],
+  );
+}
+
+/**
  * Deletes a card by id.
  */
 export async function deleteCard(id: string): Promise<void> {

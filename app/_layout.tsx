@@ -100,6 +100,10 @@ export default function RootLayout() {
                 options={{ title: 'Card Details', headerBackTitle: 'Back' }}
               />
               <Stack.Screen
+                name="edit-card/[id]"
+                options={{ title: 'Edit Card', headerBackTitle: 'Back' }}
+              />
+              <Stack.Screen
                 name="security"
                 options={{
                   title: 'Security & Privacy',

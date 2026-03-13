@@ -10,7 +10,7 @@ const SECURITY_POINTS = [
   {
     icon: '🔐',
     title: 'AES-256 Encryption',
-    body: 'Every card is encrypted before it is written to storage, so the database never contains readable card details.',
+    body: 'Every card is encrypted before it is written to storage. AES-256 is the same standard used by banks and governments worldwide — considered unbreakable with current technology.',
   },
   {
     icon: '🔑',
@@ -62,10 +62,9 @@ export default function SecurityScreen() {
               <Feather name="shield" size={26} color={theme.colors.primary} />
             </View>
             <Text style={styles.eyebrow}>Security overview</Text>
-            <Text style={styles.title}>Built to stay local.</Text>
+            <Text style={styles.title}>Your cards, locked tight.</Text>
             <Text style={styles.subtitle}>
-              The app is designed around a simple rule: card data should stay
-              encrypted, on-device, and under your control.
+              Bank-grade encryption, no internet connection, no servers — just your cards on your device and nothing else.
             </Text>
           </View>
 

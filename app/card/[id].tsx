@@ -160,7 +160,8 @@ export default function CardDetailScreen() {
   }
 
   return (
-    <AppBackground>
+    <>
+      <AppBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={styles.container}
@@ -216,10 +217,18 @@ export default function CardDetailScreen() {
 
         <View style={styles.deleteFooter}>
           <ThemedButton
-            title="Delete Card"
+            title="Edit"
+            variant="secondary"
+            onPress={() => router.push(`/edit-card/${card.id}`)}
+            style={styles.footerBtn}
+            icon={<Feather name="edit-2" size={18} color={theme.colors.text} />}
+          />
+          <ThemedButton
+            title="Delete"
             variant="danger"
             onPress={handleDelete}
             loading={deleting}
+            style={styles.footerBtn}
             icon={<Feather name="trash-2" size={18} color={theme.colors.danger} />}
           />
         </View>
@@ -231,6 +240,7 @@ export default function CardDetailScreen() {
 
       <AppModal config={modal} onDismiss={() => setModal(null)} />
     </AppBackground>
+    </>
   );
 }
 
@@ -301,12 +311,17 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   deleteFooter: {
+    flexDirection: 'row',
+    gap: 10,
     paddingHorizontal: 20,
     paddingBottom: 16,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
     backgroundColor: theme.colors.background,
+  },
+  footerBtn: {
+    flex: 1,
   },
   cardWrapper: {
     alignItems: 'center',

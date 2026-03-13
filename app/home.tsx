@@ -283,6 +283,7 @@ const styles = StyleSheet.create({
   },
   listEmptyState: {
     flexGrow: 1,
+    paddingBottom: 90, // button minHeight (52) + footer bottom offset (18)
   },
   heroCard: {
     borderRadius: 26,
