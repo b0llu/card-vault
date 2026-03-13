@@ -1,0 +1,136 @@
+/**
+ * _layout.tsx — Root layout
+ *
+ * Initialises the SQLite database, provides the auth context, and
+ * handles navigation based on auth state.
+ */
+
+import 'react-native-gesture-handler';
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+
+import { AuthProvider, useAuth } from '../src/context/AuthContext';
+import { hasPin } from '../src/services/authService';
+
+// ─── Navigation guard ─────────────────────────────────────────────────────────
+
+function NavigationGuard({ children }: { children: React.ReactNode }) {
+  const { isUnlocked } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+  const [ready, setReady] = useState(false);
+  const [pinExists, setPinExists] = useState<boolean | null>(null);
+
+  // On mount: check if a PIN has been set up
+  useEffect(() => {
+    (async () => {
+      const exists = await hasPin();
+      setPinExists(exists);
+      setReady(true);
+    })();
+  }, []);
+
+  // Route guard: redirect based on auth state
+  useEffect(() => {
+    if (!ready || pinExists === null) return;
+
+    const inAuthFlow =
+      segments[0] === 'unlock' || segments[0] === 'setup-pin';
+
+    if (!pinExists) {
+      // First launch — must create a PIN
+      if (!inAuthFlow) router.replace('/setup-pin');
+    } else if (!isUnlocked) {
+      // PIN exists but vault is locked
+      if (!inAuthFlow) router.replace('/unlock');
+    } else {
+      // Unlocked — send to home if on an auth screen
+      if (inAuthFlow) router.replace('/home');
+    }
+  }, [ready, pinExists, isUnlocked, segments, router]);
+
+  if (!ready) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator color="#00C896" size="large" />
+      </View>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+// ─── Root layout ──────────────────────────────────────────────────────────────
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <AuthProvider>
+          <NavigationGuard>
+            <Stack
+              screenOptions={{
+                headerStyle: { backgroundColor: '#0E0E0E' },
+                headerTintColor: '#FFFFFF',
+                headerTitleStyle: { fontWeight: '700' },
+                contentStyle: { backgroundColor: '#0E0E0E' },
+                animation: 'slide_from_right',
+              }}
+            >
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="setup-pin"
+                options={{ title: 'Create PIN', headerShown: false }}
+              />
+              <Stack.Screen
+                name="unlock"
+                options={{ title: 'Unlock Vault', headerShown: false }}
+              />
+              <Stack.Screen
+                name="home"
+                options={{ title: 'Secure Card Vault', headerShown: false }}
+              />
+              <Stack.Screen
+                name="add-card"
+                options={{ title: 'Add Card', headerBackTitle: 'Back' }}
+              />
+              <Stack.Screen
+                name="card/[id]"
+                options={{ title: 'Card Details', headerBackTitle: 'Back' }}
+              />
+              <Stack.Screen
+                name="security"
+                options={{
+                  title: 'Security & Privacy',
+                  headerBackTitle: 'Back',
+                }}
+              />
+              <Stack.Screen
+                name="export"
+                options={{ title: 'Export Backup', headerBackTitle: 'Back' }}
+              />
+              <Stack.Screen
+                name="import"
+                options={{ title: 'Import Backup', headerBackTitle: 'Back' }}
+              />
+            </Stack>
+          </NavigationGuard>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+const styles = StyleSheet.create({
+  loader: {
+    flex: 1,
+    backgroundColor: '#0E0E0E',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
