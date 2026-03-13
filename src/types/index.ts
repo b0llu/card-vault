@@ -41,6 +41,14 @@ export interface VaultExport {
   iv: string;
   /** Schema version for forward compatibility */
   version: string;
+  /** PBKDF2 iteration count — stored so import can derive the same key */
+  iterations?: number;
+}
+
+export interface VaultExportResult {
+  filePath: string;
+  filename: string;
+  locationDescription: string;
 }
 
 // ─── Auth Types ───────────────────────────────────────────────────────────────

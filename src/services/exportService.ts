@@ -21,29 +21,31 @@
  */
 
 import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import CryptoJS from 'crypto-js';
 import { getCards } from '../storage/database';
 import { deriveKeyFromPassword, generateSalt, generateIV } from '../crypto/encryption';
-import { Card, VaultExport } from '../types';
+import { Card, VaultExport, VaultExportResult } from '../types';
 
 export const VAULT_VERSION = '1.0';
 export const VAULT_FILE_EXTENSION = '.securevault';
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 
-/**
- * Exports all cards as a password-encrypted .securevault file
- * and opens the share sheet.
- *
- * @param password  User-defined export password
- */
-export async function exportVault(password: string): Promise<void> {
+const PBKDF2_ITERATIONS = 10_000;
+const APP_BACKUP_DIRECTORY = 'backups';
+const ANDROID_EXPORT_DIRECTORY = 'Card Vault';
+const ANDROID_EXPORT_MIME_TYPE = 'application/json';
+
+function createExportFilename() {
+  return `vault_backup_${Date.now()}${VAULT_FILE_EXTENSION}`;
+}
+
+async function buildExportPayload(password: string): Promise<string> {
   if (!password || password.length < 6) {
     throw new Error('Export password must be at least 6 characters.');
   }
 
-  // 1. Fetch all decrypted cards
   const cards = await getCards();
   if (cards.length === 0) {
     throw new Error('No cards to export.');
@@ -54,8 +56,8 @@ export async function exportVault(password: string): Promise<void> {
   // 2. Generate random salt + IV for PBKDF2 + AES
   const [saltHex, ivHex] = await Promise.all([generateSalt(), generateIV()]);
 
-  // 3. Derive AES key from password using PBKDF2-SHA256 (100k iterations)
-  const key = deriveKeyFromPassword(password, saltHex);
+  // 3. Derive AES key from password using PBKDF2-SHA256
+  const key = deriveKeyFromPassword(password, saltHex, PBKDF2_ITERATIONS);
   const iv = CryptoJS.enc.Hex.parse(ivHex);
 
   // 4. AES-256-CBC encrypt the plaintext
@@ -65,35 +67,138 @@ export async function exportVault(password: string): Promise<void> {
     padding: CryptoJS.pad.Pkcs7,
   });
 
-  // 5. Build export object
+  // 5. Build export object — store iterations so import can derive the same key
   const exportData: VaultExport = {
-    encryptedVault: encrypted.toString(), // base64
+    encryptedVault: encrypted.toString(),
     salt: saltHex,
     iv: ivHex,
     version: VAULT_VERSION,
+    iterations: PBKDF2_ITERATIONS,
   };
 
-  // 6. Write to a local file
-  const filename = `vault_backup_${Date.now()}${VAULT_FILE_EXTENSION}`;
-  const filePath = `${FileSystem.documentDirectory}${filename}`;
+  return JSON.stringify(exportData, null, 2);
+}
+
+async function ensureAppBackupDirectory(): Promise<string> {
+  if (!FileSystem.documentDirectory) {
+    throw new Error('This device does not expose a writable documents directory.');
+  }
+
+  const backupDirectory = `${FileSystem.documentDirectory}${APP_BACKUP_DIRECTORY}/`;
+  await FileSystem.makeDirectoryAsync(backupDirectory, { intermediates: true });
+  return backupDirectory;
+}
+
+async function resolveAndroidExportDirectory(
+  parentUri: string,
+): Promise<{ directoryUri: string; locationDescription: string }> {
+  try {
+    const directoryUri = await FileSystem.StorageAccessFramework.makeDirectoryAsync(
+      parentUri,
+      ANDROID_EXPORT_DIRECTORY,
+    );
+    return {
+      directoryUri,
+      locationDescription: `Selected folder/${ANDROID_EXPORT_DIRECTORY}`,
+    };
+  } catch {
+    try {
+      const entries = await FileSystem.StorageAccessFramework.readDirectoryAsync(parentUri);
+      const existingDirectory = entries.find((entry) => {
+        const decoded = decodeURIComponent(entry).toLowerCase();
+        return decoded.endsWith(`/${ANDROID_EXPORT_DIRECTORY.toLowerCase()}`);
+      });
+
+      if (existingDirectory) {
+        return {
+          directoryUri: existingDirectory,
+          locationDescription: `Selected folder/${ANDROID_EXPORT_DIRECTORY}`,
+        };
+      }
+    } catch {
+      // Fall back to the selected directory when we cannot inspect its contents.
+    }
+
+    return {
+      directoryUri: parentUri,
+      locationDescription: 'Selected folder',
+    };
+  }
+}
+
+/**
+ * Exports all cards as a password-encrypted .securevault file,
+ * saved into the app's documents/backups directory.
+ *
+ * @param password  User-defined export password
+ * @returns  The saved file metadata
+ */
+export async function exportVault(password: string): Promise<VaultExportResult> {
+  const payload = await buildExportPayload(password);
+  const backupDirectory = await ensureAppBackupDirectory();
+  const filename = createExportFilename();
+  const filePath = `${backupDirectory}${filename}`;
 
   await FileSystem.writeAsStringAsync(
     filePath,
-    JSON.stringify(exportData, null, 2),
+    payload,
     { encoding: FileSystem.EncodingType.UTF8 },
   );
 
-  // 7. Share via OS share sheet
-  const available = await Sharing.isAvailableAsync();
-  if (!available) {
-    throw new Error('Sharing is not available on this device.');
+  return {
+    filePath,
+    filename,
+    locationDescription:
+      Platform.OS === 'ios'
+        ? 'Files app/On My iPhone/Card Vault/backups'
+        : 'App storage/backups',
+  };
+}
+
+export async function saveVaultCopyToAndroidDirectory(
+  localFilePath: string,
+  filename: string,
+): Promise<VaultExportResult> {
+  if (Platform.OS !== 'android') {
+    throw new Error('Public folder export is only available on Android.');
   }
 
-  await Sharing.shareAsync(filePath, {
-    mimeType: 'application/octet-stream',
-    dialogTitle: 'Save Secure Vault Backup',
-    UTI: 'public.data',
+  const payload = await FileSystem.readAsStringAsync(localFilePath, {
+    encoding: FileSystem.EncodingType.UTF8,
   });
+
+  const downloadsUri = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot(
+    'Download',
+  );
+  const permission =
+    await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(
+      downloadsUri,
+    );
+
+  if (!permission.granted) {
+    throw new Error('Folder access was not granted.');
+  }
+
+  const { directoryUri, locationDescription } =
+    await resolveAndroidExportDirectory(permission.directoryUri);
+
+  const safFileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+    directoryUri,
+    filename.replace(VAULT_FILE_EXTENSION, ''),
+    ANDROID_EXPORT_MIME_TYPE,
+  );
+
+  await FileSystem.StorageAccessFramework.writeAsStringAsync(
+    safFileUri,
+    payload,
+    { encoding: FileSystem.EncodingType.UTF8 },
+  );
+
+  return {
+    filePath: safFileUri,
+    filename: `${filename.replace(VAULT_FILE_EXTENSION, '')}.json`,
+    locationDescription,
+  };
 }
 
 // ─── Import ───────────────────────────────────────────────────────────────────
@@ -147,8 +252,9 @@ export async function decryptVaultFile(
     );
   }
 
-  // 4. Derive key from password
-  const key = deriveKeyFromPassword(password, exportData.salt);
+  // 4. Derive key from password — fall back to 100k for exports made before v1.1
+  const iterations = exportData.iterations ?? 100_000;
+  const key = deriveKeyFromPassword(password, exportData.salt, iterations);
   const iv = CryptoJS.enc.Hex.parse(exportData.iv);
 
   // 5. Decrypt

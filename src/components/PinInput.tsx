@@ -14,12 +14,15 @@ import {
   StyleSheet,
   Vibration,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+
+import { theme } from '../theme';
 
 const KEYS = [
   ['1', '2', '3'],
@@ -144,14 +147,15 @@ export const PinInput: React.FC<PinInputProps> = ({
                 disabled={disabled || !key}
                 activeOpacity={0.6}
               >
-                <Text
-                  style={[
-                    styles.keyText,
-                    key === '⌫' && styles.backspaceText,
-                  ]}
-                >
-                  {key}
-                </Text>
+                {key === '⌫' ? (
+                  <Feather
+                    name="delete"
+                    size={22}
+                    color={theme.colors.text}
+                  />
+                ) : (
+                  <Text style={styles.keyText}>{key}</Text>
+                )}
               </TouchableOpacity>
             ))}
           </View>
@@ -164,19 +168,20 @@ export const PinInput: React.FC<PinInputProps> = ({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    paddingHorizontal: 24,
+    width: '100%',
+    paddingHorizontal: 8,
   },
   label: {
-    color: '#FFFFFF',
-    fontSize: 20,
+    color: theme.colors.text,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 32,
+    marginBottom: 28,
     letterSpacing: 0.5,
   },
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
     gap: 16,
   },
   dot: {
@@ -185,15 +190,15 @@ const styles = StyleSheet.create({
     borderRadius: 7,
   },
   dotFilled: {
-    backgroundColor: '#00C896',
+    backgroundColor: theme.colors.primary,
   },
   dotEmpty: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#3A3A3C',
+    borderColor: theme.colors.borderStrong,
   },
   errorText: {
-    color: '#FF453A',
+    color: theme.colors.danger,
     fontSize: 13,
     marginBottom: 12,
     textAlign: 'center',
@@ -210,19 +215,19 @@ const styles = StyleSheet.create({
     width: 76,
     height: 76,
     borderRadius: 38,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   keyEmpty: {
     backgroundColor: 'transparent',
+    borderColor: 'transparent',
   },
   keyText: {
-    color: '#FFFFFF',
+    color: theme.colors.text,
     fontSize: 24,
-    fontWeight: '400',
-  },
-  backspaceText: {
-    fontSize: 20,
+    fontWeight: '500',
   },
 });

@@ -13,7 +13,7 @@
  *  - Extra fields (Bank Name, Card Type, Valid From) only shown when populated.
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -39,12 +40,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { addCard } from '../src/storage/database';
 import { detectCardBrand, isValidExpiry, formatCardNumber } from '../src/utils/cardUtils';
 import { parseCardFromOCR, parseCVVFromOCR } from '../src/utils/ocrParser';
+import { AppBackground } from '../src/components/AppBackground';
 import { ThemedButton } from '../src/components/ThemedButton';
+import { theme } from '../src/theme';
 
 type ScanSide = 'front' | 'back';
 
-const FIELD_PLACEHOLDER_COLOR = '#555558';
-const BG = '#0E0E0E';
+const FIELD_PLACEHOLDER_COLOR = theme.colors.textSubtle;
+const BG = theme.colors.background;
 
 function cardNumberMaxLength(isAmex: boolean) {
   return isAmex ? 17 : 19;
@@ -188,6 +191,14 @@ export default function AddCardScreen() {
     setCameraOpen(false);
   };
 
+  // Auto-close camera when both sides are scanned
+  useEffect(() => {
+    if (frontScanned && backScanned) {
+      const t = setTimeout(() => setCameraOpen(false), 700);
+      return () => clearTimeout(t);
+    }
+  }, [frontScanned, backScanned]);
+
   // ── Save ─────────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
@@ -294,7 +305,7 @@ export default function AddCardScreen() {
                 disabled={scanning}
               >
                 {scanning ? (
-                  <ActivityIndicator color="#000" />
+                  <ActivityIndicator color={theme.colors.primaryInk} />
                 ) : (
                   <View style={styles.captureBtnInner} />
                 )}
@@ -318,8 +329,7 @@ export default function AddCardScreen() {
   // ── Manual form ──────────────────────────────────────────────────────────────
 
   return (
-    // Outer View ensures the dark background is set during navigation transitions
-    <View style={styles.screenBg}>
+    <AppBackground>
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -329,12 +339,16 @@ export default function AddCardScreen() {
             contentContainerStyle={styles.form}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Scan shortcut */}
-            <TouchableOpacity style={styles.scanButton} onPress={handleOpenCamera}>
-              <Text style={styles.scanButtonText}>📷  Scan Card with Camera</Text>
+            <TouchableOpacity
+              style={styles.scanButton}
+              onPress={handleOpenCamera}
+              activeOpacity={0.84}
+            >
+              <Feather name="camera" size={18} color={theme.colors.primaryInk} />
+              <Text style={styles.scanButtonText}>Scan card with camera</Text>
             </TouchableOpacity>
 
-            <Text style={styles.orDivider}>— or enter manually —</Text>
+            <Text style={styles.orDivider}>Manual details</Text>
 
             {/* Brand indicator */}
             {cardNumber.replace(/\D/g, '').length > 0 && (
@@ -449,17 +463,25 @@ export default function AddCardScreen() {
                 autoCapitalize="words"
               />
             )}
+          </ScrollView>
 
+          <View style={styles.saveFooter}>
             <ThemedButton
               title="Save Card"
               onPress={handleSave}
               loading={saving}
-              style={styles.saveBtn}
+              icon={
+                <Feather
+                  name="check"
+                  size={18}
+                  color={theme.colors.primaryInk}
+                />
+              }
             />
-          </ScrollView>
+          </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </View>
+    </AppBackground>
   );
 }
 
@@ -514,45 +536,56 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: 'transparent',
   },
   flex: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: 'transparent',
   },
   form: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 20,
     gap: 16,
   },
   scanButton: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 14,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 16,
     padding: 16,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#2C2C2E',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 10,
   },
   scanButtonText: {
-    color: '#00C896',
+    color: theme.colors.primaryInk,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   orDivider: {
-    color: '#555558',
-    fontSize: 13,
-    textAlign: 'center',
-    marginVertical: -4,
+    color: theme.colors.textSubtle,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  saveFooter: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
   brandRow: {
-    alignItems: 'flex-end',
-    marginBottom: -8,
+    alignItems: 'flex-start',
+    marginBottom: -4,
   },
   brandDetected: {
-    color: '#00C896',
+    color: theme.colors.primary,
     fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   row: {
     flexDirection: 'row',
@@ -565,24 +598,21 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   fieldLabel: {
-    color: '#8E8E93',
+    color: theme.colors.textSubtle,
     fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
   fieldInput: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 10,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
     paddingHorizontal: 14,
-    paddingVertical: 13,
-    color: '#FFFFFF',
+    paddingVertical: 14,
+    color: theme.colors.text,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
-  },
-  saveBtn: {
-    marginTop: 8,
+    borderColor: theme.colors.border,
   },
   // ── Camera ──
   cameraContainer: {
@@ -594,11 +624,13 @@ const styles = StyleSheet.create({
     top: 60,
     alignSelf: 'center',
     flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: 'rgba(12,10,8,0.80)',
     borderRadius: 24,
     padding: 4,
     gap: 2,
     zIndex: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   pillBtn: {
     paddingHorizontal: 20,
@@ -606,7 +638,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   pillBtnActive: {
-    backgroundColor: '#00C896',
+    backgroundColor: theme.colors.primary,
   },
   pillText: {
     color: 'rgba(255,255,255,0.6)',
@@ -614,7 +646,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pillTextActive: {
-    color: '#000000',
+    color: theme.colors.primaryInk,
   },
   cameraOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -624,16 +656,16 @@ const styles = StyleSheet.create({
   scanFrame: {
     width: 320,
     height: 200,
-    borderRadius: 16,
+    borderRadius: 24,
     borderWidth: 2,
-    borderColor: '#00C896',
+    borderColor: theme.colors.primary,
     backgroundColor: 'transparent',
   },
   scanHint: {
-    color: '#FFFFFF',
+    color: theme.colors.text,
     fontSize: 14,
     marginTop: 16,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(12,10,8,0.76)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -663,10 +695,10 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#00C896',
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 12,
@@ -676,9 +708,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.primary,
     borderWidth: 3,
-    borderColor: '#E0E0E0',
+    borderColor: 'rgba(7,20,27,0.16)',
   },
   galleryBtn: {
     padding: 12,
@@ -686,9 +718,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   galleryBtnText: {
-    color: '#00C896',
+    color: theme.colors.primary,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   noCameraContainer: {
     flex: 1,
@@ -697,7 +729,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   noCameraText: {
-    color: '#8E8E93',
+    color: theme.colors.textMuted,
     fontSize: 16,
   },
 });

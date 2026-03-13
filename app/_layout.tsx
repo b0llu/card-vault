@@ -15,6 +15,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
+import { theme } from '../src/theme';
 
 // ─── Navigation guard ─────────────────────────────────────────────────────────
 
@@ -46,7 +47,7 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
   if (pinExists === null) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator color="#00C896" size="large" />
+        <ActivityIndicator color={theme.colors.primary} size="large" />
       </View>
     );
   }
@@ -65,10 +66,11 @@ export default function RootLayout() {
           <NavigationGuard>
             <Stack
               screenOptions={{
-                headerStyle: { backgroundColor: '#0E0E0E' },
-                headerTintColor: '#FFFFFF',
+                headerStyle: { backgroundColor: theme.colors.backgroundAlt },
+                headerTintColor: theme.colors.text,
                 headerTitleStyle: { fontWeight: '700' },
-                contentStyle: { backgroundColor: '#0E0E0E' },
+                headerShadowVisible: false,
+                contentStyle: { backgroundColor: theme.colors.background },
                 animation: 'slide_from_right',
               }}
             >
@@ -90,7 +92,7 @@ export default function RootLayout() {
                 options={{
                   title: 'Add Card',
                   headerBackTitle: 'Back',
-                  contentStyle: { backgroundColor: '#0E0E0E' },
+                  contentStyle: { backgroundColor: theme.colors.background },
                 }}
               />
               <Stack.Screen
@@ -101,6 +103,20 @@ export default function RootLayout() {
                 name="security"
                 options={{
                   title: 'Security & Privacy',
+                  headerBackTitle: 'Back',
+                }}
+              />
+              <Stack.Screen
+                name="settings"
+                options={{
+                  title: 'Settings',
+                  headerBackTitle: 'Back',
+                }}
+              />
+              <Stack.Screen
+                name="reset-pin"
+                options={{
+                  title: 'Reset PIN',
                   headerBackTitle: 'Back',
                 }}
               />
@@ -123,7 +139,7 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   loader: {
     flex: 1,
-    backgroundColor: '#0E0E0E',
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },

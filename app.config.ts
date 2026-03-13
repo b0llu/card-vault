@@ -24,6 +24,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         'Card Vault uses the camera to scan your credit/debit cards via OCR.',
       NSFaceIDUsageDescription:
         'Card Vault uses Face ID to unlock your encrypted vault.',
+      UIFileSharingEnabled: true,
+      LSSupportsOpeningDocumentsInPlace: true,
       UIBackgroundModes: [],
     },
   },

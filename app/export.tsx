@@ -1,37 +1,36 @@
-/**
- * export.tsx
- *
- * Secure encrypted vault export screen.
- *
- * The user enters an export password. The vault is then:
- *  1. Decrypted using the device master key.
- *  2. Re-encrypted using PBKDF2(password) → AES-256-CBC.
- *  3. Saved as a .securevault file.
- *  4. Shared via the OS share sheet.
- */
-
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
   TouchableOpacity,
+  View,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Sharing from 'expo-sharing';
 
-import { exportVault } from '../src/services/exportService';
+import { AppBackground } from '../src/components/AppBackground';
 import { ThemedButton } from '../src/components/ThemedButton';
+import {
+  exportVault,
+  saveVaultCopyToAndroidDirectory,
+} from '../src/services/exportService';
+import { theme } from '../src/theme';
 
 export default function ExportScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [savedPath, setSavedPath] = useState<string | null>(null);
+  const [savedFilename, setSavedFilename] = useState<string | null>(null);
+  const [savedLocation, setSavedLocation] = useState<string | null>(null);
 
   const handleExport = async () => {
     if (password.length < 6) {
@@ -45,11 +44,29 @@ export default function ExportScreen() {
 
     setExporting(true);
     try {
-      await exportVault(password);
-      Alert.alert(
-        'Export Successful',
-        'Your encrypted vault backup has been shared. Store it in a safe location.',
-      );
+      const localExport = await exportVault(password);
+      let visibleExport = localExport;
+
+      if (Platform.OS === 'android') {
+        try {
+          visibleExport = await saveVaultCopyToAndroidDirectory(
+            localExport.filePath,
+            localExport.filename,
+          );
+        } catch (err: any) {
+          visibleExport = localExport;
+          Alert.alert(
+            'Backup Saved Internally',
+            err?.message === 'Folder access was not granted.'
+              ? 'The backup was saved inside the app. Use "Share / Move File" to place it in Downloads or another visible folder.'
+              : 'The backup was created, but it could not be copied to a visible folder. Use "Share / Move File" to place it in Downloads or another folder.',
+          );
+        }
+      }
+
+      setSavedPath(localExport.filePath);
+      setSavedFilename(visibleExport.filename);
+      setSavedLocation(visibleExport.locationDescription);
       setPassword('');
       setConfirmPassword('');
     } catch (err: any) {
@@ -59,116 +76,190 @@ export default function ExportScreen() {
     }
   };
 
+  const handleShare = async () => {
+    if (!savedPath) return;
+    try {
+      await Sharing.shareAsync(savedPath, {
+        mimeType: 'application/octet-stream',
+        dialogTitle: 'Save Secure Vault Backup',
+        UTI: 'public.data',
+      });
+    } catch {
+      Alert.alert('Share Failed', 'Could not open the share sheet.');
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={styles.container}>
-          {/* Info card */}
-          <View style={styles.infoCard}>
-            <Text style={styles.infoIcon}>🔒</Text>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>Encrypted Export</Text>
-              <Text style={styles.infoBody}>
-                Your vault will be encrypted with a password you set. Only
-                someone with this password can import the backup. Even if the
-                file is intercepted, the card data remains secure.
-              </Text>
+    <AppBackground>
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.flex}
+        >
+          <ScrollView
+            contentContainerStyle={styles.container}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.heroCard}>
+              <View style={styles.heroIcon}>
+                <Feather name="upload" size={20} color={theme.colors.primary} />
+              </View>
+              <View style={styles.heroCopy}>
+                <Text style={styles.heroEyebrow}>Backup</Text>
+                <Text style={styles.heroTitle}>Export encrypted vault</Text>
+                <Text style={styles.heroText}>
+                  Your cards are re-encrypted with a password before the backup
+                  file is shared.
+                </Text>
+              </View>
             </View>
-          </View>
 
-          {/* How it works */}
-          <View style={styles.steps}>
-            <Text style={styles.stepsTitle}>How it works</Text>
-            <Text style={styles.step}>
-              1. Your cards are decrypted locally using the device key.
-            </Text>
-            <Text style={styles.step}>
-              2. A new key is derived from your password using PBKDF2-SHA256
-              (100,000 iterations).
-            </Text>
-            <Text style={styles.step}>
-              3. The cards are re-encrypted with AES-256-CBC.
-            </Text>
-            <Text style={styles.step}>
-              4. The encrypted file is saved as{' '}
-              <Text style={styles.mono}>.securevault</Text>.
-            </Text>
-          </View>
+            <View style={styles.stepsCard}>
+              <StepRow
+                number="1"
+                text="Decrypt locally using the device key."
+              />
+              <StepRow
+                number="2"
+                text="Derive a password key with PBKDF2-SHA256."
+              />
+              <StepRow
+                number="3"
+                text="Re-encrypt everything into a .securevault file."
+              />
+            </View>
 
-          {/* Password fields */}
-          <View style={styles.form}>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Export Password</Text>
+            <View style={styles.formCard}>
+              <FieldLabel label="Export password" />
               <View style={styles.passwordRow}>
                 <TextInput
-                  style={[styles.fieldInput, { flex: 1 }]}
+                  style={[styles.input, styles.inputNoBorder]}
                   value={password}
                   onChangeText={setPassword}
                   placeholder="At least 6 characters"
-                  placeholderTextColor="#555558"
+                  placeholderTextColor={theme.colors.textSubtle}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
                 <TouchableOpacity
-                  onPress={() => setShowPassword((s) => !s)}
-                  style={styles.showHideBtn}
+                  onPress={() => setShowPassword((value) => !value)}
+                  style={styles.showHideButton}
                 >
                   <Text style={styles.showHideText}>
                     {showPassword ? 'Hide' : 'Show'}
                   </Text>
                 </TouchableOpacity>
               </View>
+
+              <FieldLabel label="Confirm password" />
+              <View style={styles.passwordRow}>
+                <TextInput
+                  style={[styles.input, styles.inputNoBorder]}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Re-enter password"
+                  placeholderTextColor={theme.colors.textSubtle}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword((v) => !v)}
+                  style={styles.showHideButton}
+                >
+                  <Text style={styles.showHideText}>
+                    {showConfirmPassword ? 'Hide' : 'Show'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {password.length > 0 ? <PasswordStrength password={password} /> : null}
             </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Confirm Password</Text>
-              <TextInput
-                style={styles.fieldInput}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Re-enter password"
-                placeholderTextColor="#555558"
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
+            {savedPath ? (
+              <View style={styles.successCard}>
+                <View style={styles.successIcon}>
+                  <Feather name="check" size={20} color={theme.colors.success} />
+                </View>
+                <View style={styles.successCopy}>
+                  <Text style={styles.successTitle}>Backup saved</Text>
+                  <Text style={styles.successFilename} numberOfLines={1}>{savedFilename}</Text>
+                  <Text style={styles.successHint}>
+                    {savedLocation
+                      ? `Location: ${savedLocation}`
+                      : Platform.OS === 'ios'
+                        ? 'Find it in Files app > On My iPhone > Card Vault > backups'
+                        : 'Saved to app storage. Use the button below to send it elsewhere.'}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            {savedPath ? (
+              <ThemedButton
+                title="Share / Move File"
+                onPress={handleShare}
+                variant="secondary"
+                icon={<Feather name="share" size={18} color={theme.colors.text} />}
               />
-            </View>
-
-            {/* Password strength */}
-            {password.length > 0 && (
-              <PasswordStrength password={password} />
+            ) : (
+              <ThemedButton
+                title="Export Backup"
+                onPress={handleExport}
+                loading={exporting}
+                disabled={password.length < 6 || password !== confirmPassword}
+                icon={
+                  <Feather
+                    name="upload"
+                    size={18}
+                    color={theme.colors.primaryInk}
+                  />
+                }
+              />
             )}
-          </View>
 
-          <ThemedButton
-            title="Export Encrypted Backup"
-            onPress={handleExport}
-            loading={exporting}
-            disabled={password.length < 6 || password !== confirmPassword}
-          />
-
-          <Text style={styles.warning}>
-            ⚠️ If you forget this password, you cannot restore the backup.
-            We cannot recover it for you.
-          </Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            <View style={styles.warningCard}>
+              <Feather
+                name="alert-triangle"
+                size={16}
+                color={theme.colors.warning}
+              />
+              <Text style={styles.warningText}>
+                If you forget this export password, the backup cannot be
+                restored.
+              </Text>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </AppBackground>
   );
 }
 
-// ── Password strength indicator ───────────────────────────────────────────────
+function StepRow({ number, text }: { number: string; text: string }) {
+  return (
+    <View style={styles.stepRow}>
+      <View style={styles.stepBadge}>
+        <Text style={styles.stepBadgeText}>{number}</Text>
+      </View>
+      <Text style={styles.stepText}>{text}</Text>
+    </View>
+  );
+}
+
+function FieldLabel({ label }: { label: string }) {
+  return <Text style={styles.fieldLabel}>{label}</Text>;
+}
 
 function PasswordStrength({ password }: { password: string }) {
   const strength = getStrength(password);
   const color =
-    strength === 'Weak' ? '#FF453A' :
-    strength === 'Fair' ? '#FF9F0A' :
-    '#00C896';
+    strength === 'Weak'
+      ? theme.colors.danger
+      : strength === 'Fair'
+        ? theme.colors.warning
+        : theme.colors.primary;
 
   return (
     <View style={styles.strengthRow}>
@@ -177,7 +268,12 @@ function PasswordStrength({ password }: { password: string }) {
           style={[
             styles.strengthFill,
             {
-              width: strength === 'Weak' ? '33%' : strength === 'Fair' ? '66%' : '100%',
+              width:
+                strength === 'Weak'
+                  ? '33%'
+                  : strength === 'Fair'
+                    ? '66%'
+                    : '100%',
               backgroundColor: color,
             },
           ]}
@@ -188,13 +284,15 @@ function PasswordStrength({ password }: { password: string }) {
   );
 }
 
-function getStrength(pw: string): 'Weak' | 'Fair' | 'Strong' {
-  if (pw.length < 8) return 'Weak';
-  const hasUpper = /[A-Z]/.test(pw);
-  const hasLower = /[a-z]/.test(pw);
-  const hasDigit = /\d/.test(pw);
-  const hasSymbol = /[^A-Za-z0-9]/.test(pw);
+function getStrength(password: string): 'Weak' | 'Fair' | 'Strong' {
+  if (password.length < 8) return 'Weak';
+
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasDigit = /\d/.test(password);
+  const hasSymbol = /[^A-Za-z0-9]/.test(password);
   const score = [hasUpper, hasLower, hasDigit, hasSymbol].filter(Boolean).length;
+
   if (score <= 2) return 'Fair';
   return 'Strong';
 }
@@ -202,100 +300,136 @@ function getStrength(pw: string): 'Weak' | 'Fair' | 'Strong' {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#0E0E0E',
+  },
+  flex: {
+    flex: 1,
   },
   container: {
     padding: 20,
     paddingBottom: 40,
-    gap: 20,
+    gap: 18,
   },
-  infoCard: {
-    backgroundColor: '#1C2B26',
-    borderRadius: 14,
-    padding: 16,
-    flexDirection: 'row',
-    gap: 12,
+  heroCard: {
+    backgroundColor: theme.colors.surfaceElevated,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#00C89633',
-  },
-  infoIcon: {
-    fontSize: 24,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoTitle: {
-    color: '#00C896',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  infoBody: {
-    color: '#8E8E93',
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  steps: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 14,
-    padding: 16,
-    gap: 8,
-  },
-  stepsTitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  step: {
-    color: '#8E8E93',
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  mono: {
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    color: '#00C896',
-  },
-  form: {
+    borderColor: theme.colors.borderStrong,
+    padding: 20,
+    flexDirection: 'row',
     gap: 16,
+    alignItems: 'flex-start',
   },
-  fieldContainer: {
-    gap: 6,
+  heroIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  fieldLabel: {
-    color: '#8E8E93',
+  heroCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  heroEyebrow: {
+    color: theme.colors.primary,
     fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
-  fieldInput: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    color: '#FFFFFF',
-    fontSize: 16,
+  heroTitle: {
+    color: theme.colors.text,
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  heroText: {
+    color: theme.colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  stepsCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: theme.colors.border,
+    padding: 18,
+    gap: 14,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  stepBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBadgeText: {
+    color: theme.colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  stepText: {
+    flex: 1,
+    color: theme.colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  formCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 18,
+    gap: 12,
+  },
+  fieldLabel: {
+    color: theme.colors.textSubtle,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  input: {
+    backgroundColor: theme.colors.backgroundAlt,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    color: theme.colors.text,
+    fontSize: 16,
+  },
+  inputNoBorder: {
+    flex: 1,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   passwordRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
-    borderRadius: 10,
+    backgroundColor: theme.colors.backgroundAlt,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: theme.colors.border,
     overflow: 'hidden',
+    paddingLeft: 14,
   },
-  showHideBtn: {
+  showHideButton: {
     paddingHorizontal: 14,
-    paddingVertical: 13,
+    paddingVertical: 14,
   },
   showHideText: {
-    color: '#00C896',
+    color: theme.colors.primary,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   strengthRow: {
     flexDirection: 'row',
@@ -304,25 +438,75 @@ const styles = StyleSheet.create({
   },
   strengthBar: {
     flex: 1,
-    height: 4,
-    backgroundColor: '#2C2C2E',
-    borderRadius: 2,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
   },
   strengthFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 999,
   },
   strengthLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    width: 48,
+    width: 50,
     textAlign: 'right',
-  },
-  warning: {
-    color: '#555558',
     fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 18,
+    fontWeight: '700',
+  },
+  successCard: {
+    flexDirection: 'row',
+    gap: 14,
+    alignItems: 'flex-start',
+    backgroundColor: theme.colors.successSoft,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 196, 150, 0.22)',
+    padding: 16,
+  },
+  successIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(126, 196, 150, 0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  successCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  successTitle: {
+    color: theme.colors.success,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  successFilename: {
+    color: theme.colors.text,
+    fontSize: 13,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
+  successHint: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  warningCard: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'flex-start',
+    backgroundColor: theme.colors.warningSoft,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 183, 124, 0.2)',
+    padding: 14,
+  },
+  warningText: {
+    flex: 1,
+    color: theme.colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
   },
 });

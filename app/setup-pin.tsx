@@ -1,24 +1,24 @@
-/**
- * setup-pin.tsx
- *
- * First-launch screen where the user creates their vault PIN.
- * Two-step: enter PIN → confirm PIN.
- */
-
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
   Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppBackground } from '../src/components/AppBackground';
 import { PinInput } from '../src/components/PinInput';
-import { setupPin, isBiometricsAvailable, setBiometricsEnabled } from '../src/services/authService';
 import { ThemedButton } from '../src/components/ThemedButton';
 import { useAuth } from '../src/context/AuthContext';
+import {
+  isBiometricsAvailable,
+  setBiometricsEnabled,
+  setupPin,
+} from '../src/services/authService';
+import { theme } from '../src/theme';
 
 type Step = 'create' | 'confirm' | 'biometrics';
 
@@ -27,19 +27,18 @@ export default function SetupPinScreen() {
   const [step, setStep] = useState<Step>('create');
   const [firstPin, setFirstPin] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  const [biometricsAvailable, setBiometricsAvailable] = useState(false);
 
   const handleCreate = async (pin: string) => {
     setFirstPin(pin);
-    setStep('confirm');
     setErrorMsg('');
+    setStep('confirm');
   };
 
   const handleConfirm = async (pin: string) => {
     if (pin !== firstPin) {
-      setErrorMsg('PINs do not match. Try again.');
-      setStep('create');
+      setErrorMsg('PINs do not match. Start again.');
       setFirstPin('');
+      setStep('create');
       return;
     }
 
@@ -47,10 +46,7 @@ export default function SetupPinScreen() {
       await setupPin(pin);
       await refreshPinExists();
 
-      const available = await isBiometricsAvailable();
-      setBiometricsAvailable(available);
-
-      if (available) {
+      if (await isBiometricsAvailable()) {
         setStep('biometrics');
       } else {
         unlock();
@@ -67,96 +63,194 @@ export default function SetupPinScreen() {
 
   if (step === 'biometrics') {
     return (
-      <SafeAreaView style={styles.safe}>
-        <ScrollView contentContainerStyle={styles.container}>
-          <View style={styles.iconContainer}>
-            <Text style={styles.icon}>🔐</Text>
-          </View>
-          <Text style={styles.title}>Enable Biometrics?</Text>
-          <Text style={styles.subtitle}>
-            You can unlock the vault faster using Face ID or your fingerprint.
-          </Text>
-          <View style={styles.biometricButtons}>
-            <ThemedButton
-              title="Enable Biometrics"
-              onPress={() => handleEnableBiometrics(true)}
-              style={styles.button}
+      <AppBackground>
+        <SafeAreaView style={styles.safe}>
+          <ScrollView contentContainerStyle={styles.container}>
+            <Hero
+              icon="shield"
+              eyebrow="Faster unlock"
+              title="Enable biometrics?"
+              subtitle="Use Face ID or fingerprint to open the vault without typing your PIN each time."
             />
-            <ThemedButton
-              title="Skip, use PIN only"
-              variant="ghost"
-              onPress={() => handleEnableBiometrics(false)}
-              style={styles.button}
-            />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+
+            <View style={styles.detailCard}>
+              <FeaturePill label="Device-only" />
+              <FeaturePill label="Optional" />
+              <FeaturePill label="Secure Enclave" />
+            </View>
+
+            <View style={styles.actions}>
+              <ThemedButton
+                title="Enable Biometrics"
+                onPress={() => handleEnableBiometrics(true)}
+                style={styles.button}
+                icon={
+                  <Feather
+                    name="shield"
+                    size={18}
+                    color={theme.colors.primaryInk}
+                  />
+                }
+              />
+              <ThemedButton
+                title="Use PIN Only"
+                variant="ghost"
+                onPress={() => handleEnableBiometrics(false)}
+                style={styles.button}
+              />
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </AppBackground>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.iconContainer}>
-          <Text style={styles.icon}>🔒</Text>
-        </View>
+    <AppBackground>
+      <SafeAreaView style={styles.safe}>
+        <ScrollView contentContainerStyle={styles.container}>
+          <Hero
+            icon="lock"
+            eyebrow="Secure setup"
+            title="Protect your vault"
+            subtitle={
+              step === 'create'
+                ? 'Create a 4-digit PIN to unlock your cards. It stays on this device only.'
+                : 'Re-enter the PIN once to confirm it before the vault is created.'
+            }
+          />
 
-        <Text style={styles.title}>Secure Card Vault</Text>
-        <Text style={styles.subtitle}>
-          {step === 'create'
-            ? 'Create a 4-digit PIN to protect your vault.'
-            : 'Re-enter your PIN to confirm.'}
-        </Text>
+          <View style={styles.detailCard}>
+            <FeaturePill label="Offline" />
+            <FeaturePill label="AES-256" />
+            <FeaturePill label="Auto-lock" />
+          </View>
 
-        <PinInput
-          key={step}
-          minLength={4}
-          maxLength={4}
-          label={step === 'create' ? 'Create PIN' : 'Confirm PIN'}
-          onComplete={step === 'create' ? handleCreate : handleConfirm}
-          errorMessage={errorMsg}
-        />
-      </ScrollView>
-    </SafeAreaView>
+          <View style={styles.pinCard}>
+            <PinInput
+              key={step}
+              minLength={4}
+              maxLength={4}
+              label={step === 'create' ? 'Create PIN' : 'Confirm PIN'}
+              onComplete={step === 'create' ? handleCreate : handleConfirm}
+              errorMessage={errorMsg}
+            />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </AppBackground>
+  );
+}
+
+function Hero({
+  icon,
+  eyebrow,
+  title,
+  subtitle,
+}: {
+  icon: React.ComponentProps<typeof Feather>['name'];
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <View style={styles.hero}>
+      <View style={styles.heroBadge}>
+        <Feather name={icon} size={24} color={theme.colors.primary} />
+      </View>
+      <Text style={styles.eyebrow}>{eyebrow}</Text>
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.subtitle}>{subtitle}</Text>
+    </View>
+  );
+}
+
+function FeaturePill({ label }: { label: string }) {
+  return (
+    <View style={styles.featurePill}>
+      <Text style={styles.featurePillText}>{label}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#0E0E0E',
   },
   container: {
     flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+    gap: 22,
+  },
+  hero: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  heroBadge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: theme.colors.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: 24,
   },
-  iconContainer: {
-    marginBottom: 24,
-  },
-  icon: {
-    fontSize: 64,
+  eyebrow: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   title: {
-    color: '#FFFFFF',
-    fontSize: 28,
+    color: theme.colors.text,
+    fontSize: 30,
     fontWeight: '700',
-    marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    color: '#8E8E93',
+    color: theme.colors.textMuted,
     fontSize: 15,
-    textAlign: 'center',
-    marginBottom: 40,
     lineHeight: 22,
-    maxWidth: 300,
+    textAlign: 'center',
+    maxWidth: 330,
   },
-  biometricButtons: {
+  detailCard: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  featurePill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  featurePillText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  pinCard: {
     width: '100%',
-    marginTop: 32,
+    maxWidth: 420,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingVertical: 28,
+    paddingHorizontal: 18,
+  },
+  actions: {
+    width: '100%',
+    maxWidth: 420,
     gap: 12,
   },
   button: {

@@ -115,13 +115,13 @@ export async function decryptData(encryptedBlob: string): Promise<string> {
 export function deriveKeyFromPassword(
   password: string,
   saltHex: string,
+  iterations = 10_000,
 ): CryptoJS.lib.WordArray {
   const salt = CryptoJS.enc.Hex.parse(saltHex);
 
-  // 100,000 iterations of PBKDF2-SHA256 → 256-bit key
   return CryptoJS.PBKDF2(password, salt, {
     keySize: 256 / 32,
-    iterations: 100_000,
+    iterations,
     hasher: CryptoJS.algo.SHA256,
   });
 }

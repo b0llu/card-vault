@@ -4,9 +4,12 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
+  StyleProp,
   ViewStyle,
   TextStyle,
 } from 'react-native';
+
+import { theme } from '../theme';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
@@ -16,8 +19,8 @@ interface ThemedButtonProps {
   variant?: Variant;
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
   icon?: React.ReactNode;
 }
 
@@ -44,7 +47,10 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
       activeOpacity={0.75}
     >
       {loading ? (
-        <ActivityIndicator color="#fff" size="small" />
+        <ActivityIndicator
+          color={variant === 'primary' ? theme.colors.primaryInk : theme.colors.white}
+          size="small"
+        />
       ) : (
         <>
           {icon}
@@ -59,7 +65,7 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: 14,
+    borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: 24,
     flexDirection: 'row',
@@ -67,33 +73,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     minHeight: 52,
+    borderWidth: 1,
   },
   primary: {
-    backgroundColor: '#00C896',
+    backgroundColor: theme.colors.primary,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   secondary: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: theme.colors.surfaceElevated,
+    borderColor: theme.colors.borderStrong,
   },
   danger: {
-    backgroundColor: '#3A1A1A',
-    borderWidth: 1,
-    borderColor: '#FF453A',
+    backgroundColor: theme.colors.dangerSoft,
+    borderColor: 'rgba(240, 143, 143, 0.32)',
   },
   ghost: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#3A3A3C',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderColor: theme.colors.border,
   },
   disabled: {
-    opacity: 0.4,
+    opacity: 0.48,
   },
   text: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.3,
   },
-  primaryText: { color: '#000000' },
-  secondaryText: { color: '#FFFFFF' },
-  dangerText: { color: '#FF453A' },
-  ghostText: { color: '#8E8E93' },
+  primaryText: { color: theme.colors.primaryInk },
+  secondaryText: { color: theme.colors.text },
+  dangerText: { color: theme.colors.danger },
+  ghostText: { color: theme.colors.textMuted },
 });

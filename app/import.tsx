@@ -1,34 +1,32 @@
-/**
- * import.tsx
- *
- * Secure vault import screen.
- *
- * Flow:
- *  1. User selects a .securevault file via document picker.
- *  2. User enters the password used when exporting.
- *  3. File is decrypted and parsed.
- *  4. Cards are imported (up to free tier limit of 3).
- */
-
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
   Alert,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { decryptVaultFile, VAULT_FILE_EXTENSION } from '../src/services/exportService';
-import { importCards, getCardCount, clearAllCards } from '../src/storage/database';
+import { AppBackground } from '../src/components/AppBackground';
 import { ThemedButton } from '../src/components/ThemedButton';
+import {
+  decryptVaultFile,
+  VAULT_FILE_EXTENSION,
+} from '../src/services/exportService';
+import {
+  clearAllCards,
+  getCardCount,
+  importCards,
+} from '../src/storage/database';
+import { theme } from '../src/theme';
 
 const FREE_LIMIT = 3;
 
@@ -43,7 +41,7 @@ export default function ImportScreen() {
   const handlePickFile = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*', // Allow all files so user can select .securevault
+        type: '*/*',
         copyToCacheDirectory: true,
       });
 
@@ -51,14 +49,13 @@ export default function ImportScreen() {
 
       const asset = result.assets[0];
 
-      // Validate extension
       if (
         !asset.name.endsWith(VAULT_FILE_EXTENSION) &&
-        !asset.name.endsWith('.json') // allow .json for testing
+        !asset.name.endsWith('.json')
       ) {
         Alert.alert(
           'Invalid File',
-          `Please select a ${VAULT_FILE_EXTENSION} backup file created by Secure Card Vault.`,
+          `Please select a ${VAULT_FILE_EXTENSION} backup file created by this app.`,
         );
         return;
       }
@@ -70,11 +67,34 @@ export default function ImportScreen() {
     }
   };
 
-  const handleImport = async () => {
-    if (!fileUri) {
-      Alert.alert('No File Selected', 'Please select a backup file first.');
+  const completeImport = async (
+    mode: 'replace' | 'merge',
+    cards: Awaited<ReturnType<typeof decryptVaultFile>>,
+    availableSlots: number,
+  ) => {
+    if (mode === 'replace') {
+      await clearAllCards();
+      const imported = await importCards(cards.slice(0, FREE_LIMIT));
+      setPassword('');
+      Alert.alert('Import Complete', `${imported} card(s) imported successfully.`, [
+        { text: 'Done', onPress: () => router.replace('/home') },
+      ]);
       return;
     }
+
+    const imported = await importCards(cards.slice(0, availableSlots));
+    setPassword('');
+    Alert.alert('Import Complete', `${imported} card(s) imported successfully.`, [
+      { text: 'Done', onPress: () => router.replace('/home') },
+    ]);
+  };
+
+  const handleImport = async () => {
+    if (!fileUri) {
+      Alert.alert('No File Selected', 'Please choose a backup file first.');
+      return;
+    }
+
     if (!password) {
       Alert.alert('Password Required', 'Please enter the export password.');
       return;
@@ -82,271 +102,316 @@ export default function ImportScreen() {
 
     setImporting(true);
     try {
-      // 1. Decrypt the vault file
       const cards = await decryptVaultFile(fileUri, password);
-
       const existingCount = await getCardCount();
       const availableSlots = FREE_LIMIT - existingCount;
 
       if (availableSlots === 0) {
         Alert.alert(
           'Card Limit Reached',
-          `Free version supports up to ${FREE_LIMIT} cards. Please delete some cards before importing.`,
+          `Free version supports up to ${FREE_LIMIT} cards. Delete a card before importing.`,
         );
         return;
       }
 
-      // 2. Confirm if replacing or merging
       Alert.alert(
-        'Import Options',
-        `Found ${cards.length} card(s) in the backup.\n\nYou currently have ${existingCount} card(s). You can import up to ${availableSlots} more.`,
+        'Choose Import Mode',
+        `This backup contains ${cards.length} card(s). You currently have ${existingCount} card(s) stored.`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
             text: 'Replace All',
             style: 'destructive',
             onPress: async () => {
-              await clearAllCards();
-              const imported = await importCards(cards.slice(0, FREE_LIMIT));
-              Alert.alert(
-                'Import Complete',
-                `${imported} card(s) imported successfully.`,
-                [{ text: 'Done', onPress: () => router.replace('/home') }],
-              );
+              try {
+                await completeImport('replace', cards, availableSlots);
+              } finally {
+                setImporting(false);
+              }
             },
           },
           {
-            text: `Add (up to ${availableSlots})`,
+            text: `Add up to ${availableSlots}`,
             onPress: async () => {
-              const imported = await importCards(
-                cards.slice(0, availableSlots),
-              );
-              Alert.alert(
-                'Import Complete',
-                `${imported} card(s) imported successfully.`,
-                [{ text: 'Done', onPress: () => router.replace('/home') }],
-              );
+              try {
+                await completeImport('merge', cards, availableSlots);
+              } finally {
+                setImporting(false);
+              }
             },
           },
         ],
       );
     } catch (err: any) {
-      Alert.alert('Import Failed', err.message ?? 'Could not import the backup.');
-    } finally {
+      Alert.alert(
+        'Import Failed',
+        err.message ?? 'Could not import the backup.',
+      );
       setImporting(false);
-      setPassword('');
+      return;
     }
+
+    setImporting(false);
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={styles.container}>
-          {/* Info banner */}
-          <View style={styles.infoCard}>
-            <Text style={styles.infoIcon}>📥</Text>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>Import Backup</Text>
-              <Text style={styles.infoBody}>
-                Select a <Text style={styles.mono}>.securevault</Text> file created
-                by this app and enter the password used when exporting.
+    <AppBackground>
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.flex}
+        >
+          <ScrollView
+            contentContainerStyle={styles.container}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.heroCard}>
+              <View style={styles.heroIcon}>
+                <Feather
+                  name="download"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={styles.heroCopy}>
+                <Text style={styles.heroEyebrow}>Restore</Text>
+                <Text style={styles.heroTitle}>Import a backup</Text>
+                <Text style={styles.heroText}>
+                  Pick a previously exported file and unlock it with the same
+                  password you used during export.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.formCard}>
+              <Text style={styles.fieldLabel}>Step 1</Text>
+              <TouchableOpacity
+                style={[styles.filePicker, fileUri ? styles.filePickerSelected : null]}
+                onPress={handlePickFile}
+                activeOpacity={0.84}
+              >
+                <View style={styles.fileIconWrap}>
+                  <Feather
+                    name={fileUri ? 'check' : 'file-text'}
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={styles.fileCopy}>
+                  <Text style={styles.fileTitle}>
+                    {fileUri ? 'Backup selected' : 'Choose .securevault file'}
+                  </Text>
+                  <Text style={styles.fileSubtitle} numberOfLines={1}>
+                    {fileName || 'Tap to browse for an encrypted backup file.'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <Text style={styles.fieldLabel}>Step 2</Text>
+              <View style={styles.passwordRow}>
+                <TextInput
+                  style={[styles.input, styles.inputNoBorder]}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Password used when exporting"
+                  placeholderTextColor={theme.colors.textSubtle}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword((value) => !value)}
+                  style={styles.showHideButton}
+                >
+                  <Text style={styles.showHideText}>
+                    {showPassword ? 'Hide' : 'Show'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <ThemedButton
+              title="Decrypt & Import"
+              onPress={handleImport}
+              loading={importing}
+              disabled={!fileUri || !password}
+              icon={
+                <Feather
+                  name="download"
+                  size={18}
+                  color={theme.colors.primaryInk}
+                />
+              }
+            />
+
+            <View style={styles.noteCard}>
+              <Feather
+                name="shield"
+                size={16}
+                color={theme.colors.primary}
+              />
+              <Text style={styles.noteText}>
+                Import happens entirely on-device. The password and card data are
+                never sent anywhere.
               </Text>
             </View>
-          </View>
-
-          {/* File picker */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>1. Select Backup File</Text>
-            <TouchableOpacity
-              style={[styles.filePicker, fileUri && styles.filePickerSelected]}
-              onPress={handlePickFile}
-            >
-              {fileUri ? (
-                <>
-                  <Text style={styles.filePickerIcon}>✅</Text>
-                  <Text style={styles.filePickerName} numberOfLines={1}>
-                    {fileName}
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.filePickerIcon}>📄</Text>
-                  <Text style={styles.filePickerText}>
-                    Tap to select .securevault file
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Password */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>2. Enter Export Password</Text>
-            <View style={styles.passwordRow}>
-              <TextInput
-                style={[styles.fieldInput, { flex: 1 }]}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Password used when exporting"
-                placeholderTextColor="#555558"
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword((s) => !s)}
-                style={styles.showHideBtn}
-              >
-                <Text style={styles.showHideText}>
-                  {showPassword ? 'Hide' : 'Show'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Import button */}
-          <ThemedButton
-            title="Decrypt & Import"
-            onPress={handleImport}
-            loading={importing}
-            disabled={!fileUri || !password}
-          />
-
-          {/* Security note */}
-          <View style={styles.securityNote}>
-            <Text style={styles.securityNoteTitle}>🔐 Security Note</Text>
-            <Text style={styles.securityNoteText}>
-              Decryption happens entirely on your device. Your password and
-              card data are never transmitted anywhere.
-            </Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </AppBackground>
   );
 }
 
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#0E0E0E',
+  },
+  flex: {
+    flex: 1,
   },
   container: {
     padding: 20,
     paddingBottom: 40,
-    gap: 20,
+    gap: 18,
   },
-  infoCard: {
-    backgroundColor: '#1C2B26',
-    borderRadius: 14,
-    padding: 16,
-    flexDirection: 'row',
-    gap: 12,
+  heroCard: {
+    backgroundColor: theme.colors.surfaceElevated,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#00C89633',
+    borderColor: theme.colors.borderStrong,
+    padding: 20,
+    flexDirection: 'row',
+    gap: 16,
+    alignItems: 'flex-start',
   },
-  infoIcon: {
-    fontSize: 24,
+  heroIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  infoContent: {
+  heroCopy: {
     flex: 1,
+    gap: 4,
   },
-  infoTitle: {
-    color: '#00C896',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  infoBody: {
-    color: '#8E8E93',
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  mono: {
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    color: '#00C896',
-  },
-  section: {
-    gap: 10,
-  },
-  sectionTitle: {
-    color: '#8E8E93',
+  heroEyebrow: {
+    color: theme.colors.primary,
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  heroTitle: {
+    color: theme.colors.text,
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  heroText: {
+    color: theme.colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  formCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 18,
+    gap: 12,
+  },
+  fieldLabel: {
+    color: theme.colors.textSubtle,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
   filePicker: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 14,
-    padding: 20,
+    backgroundColor: theme.colors.backgroundAlt,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    borderWidth: 2,
-    borderColor: '#2C2C2E',
-    borderStyle: 'dashed',
+    gap: 14,
   },
   filePickerSelected: {
-    borderStyle: 'solid',
-    borderColor: '#00C896',
-    backgroundColor: '#1C2B26',
+    borderColor: 'rgba(141, 201, 185, 0.28)',
+    backgroundColor: theme.colors.primarySoft,
   },
-  filePickerIcon: {
-    fontSize: 24,
+  fileIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  filePickerText: {
-    color: '#8E8E93',
-    fontSize: 14,
+  fileCopy: {
     flex: 1,
+    gap: 2,
   },
-  filePickerName: {
-    color: '#FFFFFF',
-    fontSize: 14,
+  fileTitle: {
+    color: theme.colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  fileSubtitle: {
+    color: theme.colors.textMuted,
+    fontSize: 13,
+  },
+  input: {
+    backgroundColor: theme.colors.backgroundAlt,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    color: theme.colors.text,
+    fontSize: 16,
+  },
+  inputNoBorder: {
     flex: 1,
-    fontWeight: '500',
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingVertical: 0,
   },
   passwordRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
-    borderRadius: 10,
+    backgroundColor: theme.colors.backgroundAlt,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: theme.colors.border,
     overflow: 'hidden',
+    paddingLeft: 14,
   },
-  fieldInput: {
+  showHideButton: {
     paddingHorizontal: 14,
-    paddingVertical: 13,
-    color: '#FFFFFF',
-    fontSize: 16,
-  },
-  showHideBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 13,
+    paddingVertical: 14,
   },
   showHideText: {
-    color: '#00C896',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  securityNote: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 14,
-    padding: 16,
-    gap: 6,
-  },
-  securityNoteTitle: {
-    color: '#FFFFFF',
+    color: theme.colors.primary,
     fontSize: 14,
     fontWeight: '700',
   },
-  securityNoteText: {
-    color: '#8E8E93',
+  noteCard: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'flex-start',
+    backgroundColor: theme.colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 14,
+  },
+  noteText: {
+    flex: 1,
+    color: theme.colors.textMuted,
     fontSize: 13,
-    lineHeight: 20,
+    lineHeight: 19,
   },
 });

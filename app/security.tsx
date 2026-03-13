@@ -1,168 +1,214 @@
-/**
- * security.tsx
- *
- * Security & Privacy transparency screen.
- *
- * Clearly explains to users how their data is protected in plain language.
- * This screen builds trust and demonstrates our security commitments.
- */
-
 import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { AppBackground } from '../src/components/AppBackground';
+import { theme } from '../src/theme';
 
 const SECURITY_POINTS = [
   {
     icon: '🔐',
     title: 'AES-256 Encryption',
-    body: 'Every card you save is encrypted using AES-256-CBC — the same standard used by banks and governments worldwide. Your card data is encrypted before it is written to storage.',
+    body: 'Every card is encrypted before it is written to storage, so the database never contains readable card details.',
   },
   {
     icon: '🔑',
     title: 'Hardware-Backed Key Storage',
-    body: 'Your encryption key is stored in the device\'s secure hardware (Android Keystore / iOS Secure Enclave). Even if someone extracts the app database, they cannot read the data without the hardware key.',
+    body: 'The encryption key is protected by Android Keystore or the iOS Secure Enclave when the device supports it.',
   },
   {
     icon: '📴',
     title: 'Fully Offline',
-    body: 'The app works completely offline. There are no network requests, no analytics, no background sync. Your data never leaves your device under any circumstances.',
-  },
-  {
-    icon: '🚫',
-    title: 'No Servers, No Cloud',
-    body: 'We do not operate any servers that store card data. There is no backend, no database in the cloud, and no third-party services with access to your information.',
+    body: 'There are no network requests, analytics calls, or background sync jobs. Your data never leaves the device.',
   },
   {
     icon: '🙈',
     title: 'Zero Knowledge',
-    body: 'Even the developer of this app cannot access your card data. The encryption key exists only on your device. We have no backdoor, no recovery key, and no way to view your information.',
+    body: 'There is no backend and no recovery service. Only you can access the data stored in the vault.',
   },
   {
     icon: '🧬',
     title: 'Biometric & PIN Protection',
-    body: 'Your vault is locked behind your device biometrics (Face ID / Fingerprint) and/or a PIN. The vault auto-locks after 30 seconds in the background.',
+    body: 'The vault can require your PIN and optional biometrics, and it auto-locks after time in the background.',
   },
   {
     icon: '📋',
     title: 'Clipboard Auto-Clear',
-    body: 'When you copy a card number, it is automatically cleared from your clipboard after 20 seconds to prevent accidental exposure.',
+    body: 'Copied card values are cleared from the clipboard automatically after a short delay to reduce accidental exposure.',
   },
   {
     icon: '🖼',
     title: 'Screenshot Protection',
-    body: 'On Android, the app sets FLAG_SECURE to prevent screenshots and screen recordings, protecting your card data from screen capture tools.',
+    body: 'Android uses secure window flags to block screenshots and screen recordings when the app is open.',
   },
   {
     icon: '💾',
-    title: 'Secure Backup',
-    body: 'When you export your vault, it is re-encrypted with a password you choose using PBKDF2 key derivation. Your master device key is never included in the export file.',
+    title: 'Encrypted Backup Files',
+    body: 'Exports are protected with a password-derived key so the shared backup file stays encrypted outside the app too.',
   },
 ];
 
 export default function SecurityScreen() {
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Hero */}
-        <View style={styles.hero}>
-          <Text style={styles.heroIcon}>🛡</Text>
-          <Text style={styles.heroTitle}>Your Security</Text>
-          <Text style={styles.heroSubtitle}>
-            Card Vault was built from the ground up with your privacy
-            as the top priority. Here is exactly how your data is protected.
-          </Text>
-        </View>
-
-        {/* Security points */}
-        {SECURITY_POINTS.map((point, i) => (
-          <View key={i} style={styles.card}>
-            <Text style={styles.cardIcon}>{point.icon}</Text>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>{point.title}</Text>
-              <Text style={styles.cardBody}>{point.body}</Text>
+    <AppBackground>
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.hero}>
+            <View style={styles.heroBadge}>
+              <Feather name="shield" size={26} color={theme.colors.primary} />
             </View>
+            <Text style={styles.eyebrow}>Security overview</Text>
+            <Text style={styles.title}>Built to stay local.</Text>
+            <Text style={styles.subtitle}>
+              The app is designed around a simple rule: card data should stay
+              encrypted, on-device, and under your control.
+            </Text>
           </View>
-        ))}
 
-        {/* Bottom note */}
-        <Text style={styles.bottomNote}>
-          Card Vault is a local-only app. Your cards are yours alone.
-        </Text>
-      </ScrollView>
-    </SafeAreaView>
+          <View style={styles.summaryCard}>
+            <SecurityChip label="No cloud sync" />
+            <SecurityChip label="No analytics" />
+            <SecurityChip label="Device-only keys" />
+          </View>
+
+          {SECURITY_POINTS.map((point) => (
+            <View key={point.title} style={styles.pointCard}>
+              <View style={styles.pointIconWrap}>
+                <Text style={styles.pointIcon}>{point.icon}</Text>
+              </View>
+              <View style={styles.pointCopy}>
+                <Text style={styles.pointTitle}>{point.title}</Text>
+                <Text style={styles.pointBody}>{point.body}</Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </SafeAreaView>
+    </AppBackground>
+  );
+}
+
+function SecurityChip({ label }: { label: string }) {
+  return (
+    <View style={styles.securityChip}>
+      <Text style={styles.securityChipText}>{label}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#0E0E0E',
   },
   container: {
     padding: 20,
     paddingBottom: 40,
-    gap: 12,
+    gap: 14,
   },
   hero: {
     alignItems: 'center',
-    paddingVertical: 24,
-    marginBottom: 8,
+    gap: 10,
+    paddingVertical: 12,
   },
-  heroIcon: {
-    fontSize: 56,
-    marginBottom: 16,
+  heroBadge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: theme.colors.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  heroTitle: {
-    color: '#FFFFFF',
-    fontSize: 26,
+  eyebrow: {
+    color: theme.colors.primary,
+    fontSize: 12,
     fontWeight: '700',
-    marginBottom: 12,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  heroSubtitle: {
-    color: '#8E8E93',
-    fontSize: 14,
+  title: {
+    color: theme.colors.text,
+    fontSize: 30,
+    fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 21,
-    maxWidth: 320,
   },
-  card: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 14,
-    padding: 16,
+  subtitle: {
+    color: theme.colors.textMuted,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    maxWidth: 330,
+  },
+  summaryCard: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'center',
+    paddingBottom: 6,
+  },
+  securityChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  securityChipText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  pointCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 18,
     flexDirection: 'row',
     gap: 14,
     alignItems: 'flex-start',
   },
-  cardIcon: {
-    fontSize: 24,
-    marginTop: 1,
-    width: 30,
-    textAlign: 'center',
+  pointIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cardContent: {
+  pointIcon: {
+    fontSize: 20,
+  },
+  pointCopy: {
     flex: 1,
+    gap: 4,
   },
-  cardTitle: {
-    color: '#FFFFFF',
+  pointTitle: {
+    color: theme.colors.text,
     fontSize: 15,
     fontWeight: '700',
-    marginBottom: 5,
   },
-  cardBody: {
-    color: '#8E8E93',
+  pointBody: {
+    color: theme.colors.textMuted,
     fontSize: 13,
     lineHeight: 20,
   },
   bottomNote: {
-    color: '#555558',
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'flex-start',
+    paddingTop: 8,
+  },
+  bottomNoteText: {
+    flex: 1,
+    color: theme.colors.textSubtle,
+    fontSize: 12,
+    lineHeight: 18,
   },
 });
