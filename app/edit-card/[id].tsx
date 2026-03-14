@@ -15,11 +15,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppBackground } from '../../src/components/AppBackground';
+import { CardBrandPicker } from '../../src/components/CardBrandPicker';
 import { AppModal, ModalConfig } from '../../src/components/AppModal';
 import { ThemedButton } from '../../src/components/ThemedButton';
 import { getCardById, updateCard } from '../../src/storage/database';
 import { detectCardBrand, formatCardNumber, isValidExpiry } from '../../src/utils/cardUtils';
-import { Card } from '../../src/types';
+import { CardBrand } from '../../src/types';
 import { theme } from '../../src/theme';
 
 const PLACEHOLDER_COLOR = theme.colors.textMuted;
@@ -31,6 +32,9 @@ export default function EditCardScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modal, setModal] = useState<ModalConfig | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<CardBrand>('unknown');
+  const [customBrandName, setCustomBrandName] = useState('');
+  const [brandManuallySet, setBrandManuallySet] = useState(false);
 
   // Form fields
   const [name, setName] = useState('');
@@ -45,9 +49,16 @@ export default function EditCardScreen() {
   const [validFromMonth, setValidFromMonth] = useState('');
   const [validFromYear, setValidFromYear] = useState('');
 
-  const brand = detectCardBrand(cardNumber);
-  const isAmex = brand === 'amex';
+  const detectedBrand = detectCardBrand(cardNumber);
+  const isAmex = detectedBrand === 'amex';
   const cvvMaxLength = isAmex ? 4 : 3;
+
+  useEffect(() => {
+    if (!brandManuallySet) {
+      setSelectedBrand(detectedBrand);
+      setCustomBrandName('');
+    }
+  }, [detectedBrand, brandManuallySet]);
 
   useEffect(() => {
     (async () => {
@@ -64,10 +75,25 @@ export default function EditCardScreen() {
         setCardType(card.cardType ?? '');
         setValidFromMonth(card.validFromMonth ?? '');
         setValidFromYear(card.validFromYear ?? '');
+        setSelectedBrand(card.brand);
+        setCustomBrandName(card.customBrandName ?? '');
+        setBrandManuallySet(
+          card.brand === 'custom' ||
+          card.brand !== detectCardBrand(card.cardNumber) ||
+          Boolean(card.customBrandName?.trim()),
+        );
       }
       setLoading(false);
     })();
   }, [id]);
+
+  const handleBrandChange = (brand: CardBrand) => {
+    setSelectedBrand(brand);
+    if (brand !== 'custom') {
+      setCustomBrandName('');
+    }
+    setBrandManuallySet(brand === 'custom' || brand !== detectedBrand);
+  };
 
   const handleSave = async () => {
     const cleanNumber = cardNumber.replace(/\D/g, '');
@@ -92,6 +118,10 @@ export default function EditCardScreen() {
       setModal({ title: 'Validation', message: 'Please enter the CVV.', buttons: [{ label: 'OK', variant: 'ghost', onPress: () => {} }] });
       return;
     }
+    if (selectedBrand === 'custom' && !customBrandName.trim()) {
+      setModal({ title: 'Validation', message: 'Please enter a custom card brand name.', buttons: [{ label: 'OK', variant: 'ghost', onPress: () => {} }] });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -102,7 +132,8 @@ export default function EditCardScreen() {
         expiryYear: expiryYear.slice(-2),
         cvv: cvv.trim(),
         nickname: nickname.trim(),
-        brand: detectCardBrand(cleanNumber),
+        brand: selectedBrand,
+        customBrandName: selectedBrand === 'custom' ? customBrandName.trim() : undefined,
         bankName: bankName.trim() || undefined,
         validFromMonth: validFromMonth || undefined,
         validFromYear: validFromYear || undefined,
@@ -139,13 +170,13 @@ export default function EditCardScreen() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              {brand !== 'unknown' && (
-                <View style={styles.brandRow}>
-                  <Text style={styles.brandDetected}>
-                    {brand.toUpperCase()}
-                  </Text>
-                </View>
-              )}
+              <CardBrandPicker
+                value={selectedBrand}
+                customBrandName={customBrandName}
+                detectedBrand={cardNumber.replace(/\D/g, '').length > 0 ? detectedBrand : undefined}
+                onChange={handleBrandChange}
+                onChangeCustomBrandName={setCustomBrandName}
+              />
 
               <Field label="Cardholder Name" value={name} onChangeText={setName} placeholder="JOHN SMITH" autoCapitalize="characters" />
 
@@ -273,16 +304,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 20,
     gap: 16,
-  },
-  brandRow: {
-    alignItems: 'flex-start',
-    marginBottom: -4,
-  },
-  brandDetected: {
-    color: theme.colors.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.4,
   },
   row: { flexDirection: 'row', gap: 12 },
   rowField: { flex: 1 },

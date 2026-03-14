@@ -15,11 +15,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Card } from '../types';
 import {
+  getBrandDisplayName,
   maskCardNumber,
   formatExpiry,
   getBrandGradient,
   getBrandAccent,
-  getBrandLabel,
 } from '../utils/cardUtils';
 import { shadows, theme } from '../theme';
 
@@ -37,7 +37,7 @@ export const CardView: React.FC<CardViewProps> = ({
 }) => {
   const gradient = getBrandGradient(card.brand);
   const accent = getBrandAccent(card.brand);
-  const brandLabel = getBrandLabel(card.brand);
+  const brandLabel = getBrandDisplayName(card.brand, card.customBrandName);
 
   const cvvStyle = useAnimatedStyle(() => ({
     opacity: withTiming(showCVV ? 1 : 0, {

@@ -11,7 +11,7 @@
  *  - Extra fields (Bank Name, Card Type, Valid From) only shown when populated.
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -38,9 +38,11 @@ import { addCard } from '../src/storage/database';
 import { detectCardBrand, isValidExpiry, formatCardNumber } from '../src/utils/cardUtils';
 import { parseCardFromOCR } from '../src/utils/ocrParser';
 import { AppBackground } from '../src/components/AppBackground';
+import { CardBrandPicker } from '../src/components/CardBrandPicker';
 import { AppModal, ModalConfig } from '../src/components/AppModal';
 import { ThemedButton } from '../src/components/ThemedButton';
 import { theme } from '../src/theme';
+import type { CardBrand } from '../src/types';
 
 const FIELD_PLACEHOLDER_COLOR = theme.colors.textMuted;
 
@@ -57,6 +59,9 @@ export default function AddCardScreen() {
   const [scanning, setScanning] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [modal, setModal] = useState<ModalConfig | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<CardBrand>('unknown');
+  const [customBrandName, setCustomBrandName] = useState('');
+  const [brandManuallySet, setBrandManuallySet] = useState(false);
 
   // Core form fields
   const [name, setName] = useState('');
@@ -74,9 +79,24 @@ export default function AddCardScreen() {
 
   const [saving, setSaving] = useState(false);
 
-  const brand = detectCardBrand(cardNumber);
-  const isAmex = brand === 'amex';
+  const detectedBrand = detectCardBrand(cardNumber);
+  const isAmex = detectedBrand === 'amex';
   const cvvMaxLength = isAmex ? 4 : 3;
+
+  useEffect(() => {
+    if (!brandManuallySet) {
+      setSelectedBrand(detectedBrand);
+      setCustomBrandName('');
+    }
+  }, [detectedBrand, brandManuallySet]);
+
+  const handleBrandChange = useCallback((brand: CardBrand) => {
+    setSelectedBrand(brand);
+    if (brand !== 'custom') {
+      setCustomBrandName('');
+    }
+    setBrandManuallySet(brand === 'custom' || brand !== detectedBrand);
+  }, [detectedBrand]);
 
   // ── OCR ─────────────────────────────────────────────────────────────────────
 
@@ -218,6 +238,14 @@ export default function AddCardScreen() {
       });
       return;
     }
+    if (selectedBrand === 'custom' && !customBrandName.trim()) {
+      setModal({
+        title: 'Validation',
+        message: 'Please enter a custom card brand name.',
+        buttons: [{ label: 'OK', variant: 'ghost', onPress: () => {} }],
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -228,7 +256,8 @@ export default function AddCardScreen() {
         expiryYear: expiryYear.slice(-2),
         cvv: cvv.trim(),
         nickname: nickname.trim(),
-        brand: detectCardBrand(cleanNumber),
+        brand: selectedBrand,
+        customBrandName: selectedBrand === 'custom' ? customBrandName.trim() : undefined,
         bankName: bankName.trim() || undefined,
         validFromMonth: validFromMonth || undefined,
         validFromYear: validFromYear || undefined,
@@ -324,14 +353,13 @@ export default function AddCardScreen() {
 
                 <Text style={styles.orDivider}>Manual details</Text>
 
-                {/* Brand indicator */}
-                {cardNumber.replace(/\D/g, '').length > 0 && (
-                  <View style={styles.brandRow}>
-                    <Text style={styles.brandDetected}>
-                      {brand.toUpperCase()}
-                    </Text>
-                  </View>
-                )}
+                <CardBrandPicker
+                  value={selectedBrand}
+                  customBrandName={customBrandName}
+                  detectedBrand={cardNumber.replace(/\D/g, '').length > 0 ? detectedBrand : undefined}
+                  onChange={handleBrandChange}
+                  onChangeCustomBrandName={setCustomBrandName}
+                />
 
                 {/* ── Core fields ── */}
                 <Field
@@ -558,16 +586,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
     backgroundColor: theme.colors.background,
-  },
-  brandRow: {
-    alignItems: 'flex-start',
-    marginBottom: -4,
-  },
-  brandDetected: {
-    color: theme.colors.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.4,
   },
   row: {
     flexDirection: 'row',

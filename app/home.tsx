@@ -19,8 +19,8 @@ import { ThemedButton } from '../src/components/ThemedButton';
 import { Card } from '../src/types';
 import { getCardCount, getCards } from '../src/storage/database';
 import {
+  getBrandDisplayName,
   getBrandGradient,
-  getBrandLabel,
   maskCardNumber,
 } from '../src/utils/cardUtils';
 import { theme } from '../src/theme';
@@ -70,7 +70,7 @@ function groupCards(
   for (const card of cards) {
     let key: string;
     if (grouping === 'brand') {
-      key = getBrandLabel(card.brand) || 'Unknown';
+      key = getBrandDisplayName(card.brand, card.customBrandName) || 'Unknown';
     } else if (grouping === 'bank') {
       key = card.bankName?.trim() || 'No Bank';
     } else if (grouping === 'type') {
@@ -124,7 +124,7 @@ export default function HomeScreen() {
   const availableGroupings = useMemo<GroupingOption[]>(() => {
     const options: GroupingOption[] = [{ key: 'none', label: 'None' }];
 
-    const brands = new Set(cards.map((c) => getBrandLabel(c.brand) || 'Unknown'));
+    const brands = new Set(cards.map((c) => getBrandDisplayName(c.brand, c.customBrandName) || 'Unknown'));
     if (brands.size >= 2) options.push({ key: 'brand', label: 'Brand' });
 
     const banks = new Set(cards.map((c) => c.bankName?.trim() || 'No Bank'));
@@ -157,7 +157,7 @@ export default function HomeScreen() {
 
   const renderCard = ({ item }: { item: Card }) => {
     const gradient = getBrandGradient(item.brand);
-    const brandLabel = getBrandLabel(item.brand) || 'STORED CARD';
+    const brandLabel = getBrandDisplayName(item.brand, item.customBrandName) || 'STORED CARD';
 
     return (
       <TouchableOpacity
@@ -438,8 +438,8 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 140,
+    paddingTop: 0,
+    paddingBottom: 100,
   },
   listEmptyState: {
     flexGrow: 1,

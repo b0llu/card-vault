@@ -144,7 +144,7 @@ export async function updateCard(id: string, updates: Omit<Card, 'id'>): Promise
   const card: Card = {
     ...updates,
     id,
-    brand: detectCardBrand(updates.cardNumber),
+    brand: updates.brand ?? detectCardBrand(updates.cardNumber),
   };
   const encryptedData = await encryptData(JSON.stringify(card));
   await db.runAsync(

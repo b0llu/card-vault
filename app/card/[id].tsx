@@ -25,7 +25,7 @@ import { CardView } from '../../src/components/CardView';
 import { ThemedButton } from '../../src/components/ThemedButton';
 import { deleteCard, getCardById } from '../../src/storage/database';
 import { Card } from '../../src/types';
-import { formatCardNumber, formatExpiry, maskCardNumber } from '../../src/utils/cardUtils';
+import { formatCardNumber, formatExpiry, getBrandDisplayName, maskCardNumber } from '../../src/utils/cardUtils';
 import { theme } from '../../src/theme';
 
 const REVEAL_DURATION_MS = 5_000;
@@ -196,7 +196,7 @@ export default function CardDetailScreen() {
             {card.bankName ? <InfoRow label="Bank" value={card.bankName} /> : null}
             {card.cardType ? <InfoRow label="Card Type" value={card.cardType} /> : null}
             {card.nickname ? <InfoRow label="Nickname" value={card.nickname} /> : null}
-            <InfoRow label="Card Brand" value={card.brand.toUpperCase()} />
+            <InfoRow label="Card Brand" value={getBrandDisplayName(card.brand, card.customBrandName)} />
           </View>
 
           <View style={styles.actionsGrid}>

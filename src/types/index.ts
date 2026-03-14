@@ -5,6 +5,10 @@ export type CardBrand =
   | 'mastercard'
   | 'amex'
   | 'discover'
+  | 'unionpay'
+  | 'jcb'
+  | 'rupay'
+  | 'custom'
   | 'unknown';
 
 export interface Card {
@@ -16,6 +20,7 @@ export interface Card {
   cvv: string;           // 3–4 digit security code
   nickname: string;      // User-defined label e.g. "Travel Visa"
   brand: CardBrand;
+  customBrandName?: string;
   bankName?: string;       // e.g. "HDFC Bank", "Chase"
   validFromMonth?: string; // "01" – "12" (if card shows valid-from date)
   validFromYear?: string;  // "23", "24", …

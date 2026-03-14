@@ -1,5 +1,17 @@
 import { CardBrand } from '../types';
 
+export const CARD_BRAND_OPTIONS: CardBrand[] = [
+  'visa',
+  'mastercard',
+  'amex',
+  'discover',
+  'unionpay',
+  'jcb',
+  'rupay',
+  'custom',
+  'unknown',
+];
+
 // ─── Brand Detection ──────────────────────────────────────────────────────────
 
 /**
@@ -13,6 +25,9 @@ export function detectCardBrand(cardNumber: string): CardBrand {
   if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return 'mastercard';
   if (/^3[47]/.test(n)) return 'amex';
   if (/^6(?:011|5[0-9]{2})/.test(n)) return 'discover';
+  if (/^(?:2131|1800|35(?:2[89]|[3-8][0-9]))/.test(n)) return 'jcb';
+  if (/^(?:62|81)/.test(n)) return 'unionpay';
+  if (/^(?:508|60(?!11)|6521|6522)/.test(n)) return 'rupay';
   return 'unknown';
 }
 
@@ -64,6 +79,9 @@ export function getBrandGradient(brand: CardBrand): [string, string] {
     case 'mastercard': return ['#0A0A0A', '#1A1A1A'];
     case 'amex':       return ['#1E1E1E', '#343434'];
     case 'discover':   return ['#141414', '#242424'];
+    case 'unionpay':   return ['#0D1E3C', '#1C4F84'];
+    case 'jcb':        return ['#0F2F23', '#1C6247'];
+    case 'rupay':      return ['#3B200F', '#6B3A19'];
     default:           return ['#161616', '#262626'];
   }
 }
@@ -74,6 +92,9 @@ export function getBrandAccent(brand: CardBrand): string {
     case 'mastercard': return '#D0D0D0';
     case 'amex':       return '#E8E8E8';
     case 'discover':   return '#C0C0C0';
+    case 'unionpay':   return '#CBE7FF';
+    case 'jcb':        return '#D8FFE7';
+    case 'rupay':      return '#FFE2C4';
     default:           return '#888888';
   }
 }
@@ -84,8 +105,23 @@ export function getBrandLabel(brand: CardBrand): string {
     case 'mastercard': return 'MASTERCARD';
     case 'amex':       return 'AMEX';
     case 'discover':   return 'DISCOVER';
-    default:           return '';
+    case 'unionpay':   return 'UNIONPAY';
+    case 'jcb':        return 'JCB';
+    case 'rupay':      return 'RUPAY';
+    case 'custom':     return 'CUSTOM';
+    default:           return 'UNKNOWN';
   }
+}
+
+export function getBrandDisplayName(
+  brand: CardBrand,
+  customBrandName?: string,
+): string {
+  if (brand === 'custom') {
+    const custom = customBrandName?.trim();
+    return custom && custom.length > 0 ? custom : 'Custom';
+  }
+  return getBrandLabel(brand);
 }
 
 // ─── Validation ───────────────────────────────────────────────────────────────
