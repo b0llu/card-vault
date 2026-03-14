@@ -196,7 +196,7 @@ export default function CardDetailScreen() {
             {card.bankName ? <InfoRow label="Bank" value={card.bankName} /> : null}
             {card.cardType ? <InfoRow label="Card Type" value={card.cardType} /> : null}
             {card.nickname ? <InfoRow label="Nickname" value={card.nickname} /> : null}
-            <InfoRow label="Network" value={card.brand.toUpperCase()} />
+            <InfoRow label="Card Brand" value={card.brand.toUpperCase()} />
           </View>
 
           <View style={styles.actionsGrid}>

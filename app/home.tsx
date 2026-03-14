@@ -2,6 +2,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  ScrollView,
+  SectionList,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -26,24 +28,86 @@ import { theme } from '../src/theme';
 
 const FREE_LIMIT = 3;
 
+type GroupingKey = 'none' | 'brand' | 'bank' | 'type' | 'expiry';
+
+interface GroupingOption {
+  key: GroupingKey;
+  label: string;
+}
+
+function getExpiryBucket(expiryMonth: string, expiryYear: string): string {
+  const now = new Date();
+  const currentYear = now.getFullYear() % 100;
+  const currentMonth = now.getMonth() + 1;
+
+  const year = parseInt(expiryYear, 10);
+  const month = parseInt(expiryMonth, 10);
+  const normalizedYear = year > 100 ? year % 100 : year;
+
+  if (
+    normalizedYear < currentYear ||
+    (normalizedYear === currentYear && month < currentMonth)
+  ) {
+    return 'Expired';
+  }
+
+  const expiryDate = new Date(2000 + normalizedYear, month - 1);
+  const sixMonthsFromNow = new Date(now.getFullYear(), now.getMonth() + 6);
+
+  if (expiryDate <= sixMonthsFromNow) {
+    return 'Expiring Soon';
+  }
+
+  return 'Valid';
+}
+
+function groupCards(
+  cards: Card[],
+  grouping: GroupingKey,
+): { title: string; data: Card[] }[] {
+  if (grouping === 'none') return [{ title: '', data: cards }];
+
+  const groups = new Map<string, Card[]>();
+
+  for (const card of cards) {
+    let key: string;
+    if (grouping === 'brand') {
+      key = getBrandLabel(card.brand) || 'Unknown';
+    } else if (grouping === 'bank') {
+      key = card.bankName?.trim() || 'No Bank';
+    } else if (grouping === 'type') {
+      key = card.cardType?.trim() || 'Other';
+    } else {
+      key = getExpiryBucket(card.expiryMonth, card.expiryYear);
+    }
+
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(card);
+  }
+
+  if (grouping === 'expiry') {
+    const order = ['Expired', 'Expiring Soon', 'Valid'];
+    return order
+      .filter((k) => groups.has(k))
+      .map((k) => ({ title: k, data: groups.get(k)! }));
+  }
+
+  return Array.from(groups.entries()).map(([title, data]) => ({ title, data }));
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const [cards, setCards] = useState<Card[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<ModalConfig | null>(null);
+  const [activeGrouping, setActiveGrouping] = useState<GroupingKey>('none');
 
   const remainingSlots = Math.max(FREE_LIMIT - count, 0);
 
   const usageLabel = useMemo(() => {
-    if (count === 0) {
-      return `0/${FREE_LIMIT} cards stored`;
-    }
-
-    if (remainingSlots === 0) {
-      return `${count}/${FREE_LIMIT} cards stored · vault full`;
-    }
-
+    if (count === 0) return `0/${FREE_LIMIT} cards stored`;
+    if (remainingSlots === 0) return `${count}/${FREE_LIMIT} cards stored · vault full`;
     return `${count}/${FREE_LIMIT} cards stored · ${remainingSlots} slot${remainingSlots === 1 ? '' : 's'} left`;
   }, [count, remainingSlots]);
 
@@ -61,6 +125,36 @@ export default function HomeScreen() {
     }, [loadCards]),
   );
 
+  const availableGroupings = useMemo<GroupingOption[]>(() => {
+    const options: GroupingOption[] = [{ key: 'none', label: 'None' }];
+
+    const brands = new Set(cards.map((c) => getBrandLabel(c.brand) || 'Unknown'));
+    if (brands.size >= 2) options.push({ key: 'brand', label: 'Brand' });
+
+    const banks = new Set(cards.map((c) => c.bankName?.trim() || 'No Bank'));
+    if (banks.size >= 2) options.push({ key: 'bank', label: 'Bank' });
+
+    const types = new Set(cards.map((c) => c.cardType?.trim() || 'Other'));
+    if (types.size >= 2) options.push({ key: 'type', label: 'Type' });
+
+    const buckets = new Set(
+      cards.map((c) => getExpiryBucket(c.expiryMonth, c.expiryYear)),
+    );
+    if (buckets.size >= 2) options.push({ key: 'expiry', label: 'Expiry' });
+
+    return options;
+  }, [cards]);
+
+  const effectiveGrouping: GroupingKey = useMemo(() => {
+    if (availableGroupings.some((g) => g.key === activeGrouping)) return activeGrouping;
+    return 'none';
+  }, [activeGrouping, availableGroupings]);
+
+  const sections = useMemo(
+    () => groupCards(cards, effectiveGrouping),
+    [cards, effectiveGrouping],
+  );
+
   const handleAddCard = () => {
     if (count >= FREE_LIMIT) {
       setModal({
@@ -70,7 +164,6 @@ export default function HomeScreen() {
       });
       return;
     }
-
     router.push('/add-card');
   };
 
@@ -120,6 +213,40 @@ export default function HomeScreen() {
     );
   };
 
+  const renderSectionHeader = ({
+    section,
+  }: {
+    section: { title: string };
+  }) => {
+    if (!section.title) return null;
+    return (
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionHeaderText}>
+          {section.title.toUpperCase()}
+        </Text>
+      </View>
+    );
+  };
+
+  const showGroupingBar = availableGroupings.length > 1;
+
+  const listEmptyComponent = loading ? (
+    <View style={styles.emptyCard}>
+      <ActivityIndicator color={theme.colors.primary} size="small" />
+      <Text style={styles.emptyText}>Loading your vault…</Text>
+    </View>
+  ) : (
+    <View style={styles.emptyCard}>
+      <View style={styles.emptyIconWrap}>
+        <Feather name="credit-card" size={22} color={theme.colors.primary} />
+      </View>
+      <Text style={styles.emptyTitle}>No cards saved yet</Text>
+      <Text style={styles.emptyText}>
+        Scan your first card or add it manually to start building your vault.
+      </Text>
+    </View>
+  );
+
   return (
     <AppBackground>
       <SafeAreaView style={styles.safe}>
@@ -142,40 +269,71 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <FlatList
-          data={cards}
-          keyExtractor={(item) => item.id}
-          renderItem={renderCard}
-          showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          contentContainerStyle={[
-            styles.list,
-            cards.length === 0 && !loading ? styles.listEmptyState : null,
-          ]}
-          ListEmptyComponent={
-            loading ? (
-              <View style={styles.emptyCard}>
-                <ActivityIndicator color={theme.colors.primary} size="small" />
-                <Text style={styles.emptyText}>Loading your vault…</Text>
-              </View>
-            ) : (
-              <View style={styles.emptyCard}>
-                <View style={styles.emptyIconWrap}>
-                  <Feather
-                    name="credit-card"
-                    size={22}
-                    color={theme.colors.primary}
-                  />
-                </View>
-                <Text style={styles.emptyTitle}>No cards saved yet</Text>
-                <Text style={styles.emptyText}>
-                  Scan your first card or add it manually to start building your
-                  vault.
-                </Text>
-              </View>
-            )
-          }
-        />
+        {showGroupingBar && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.groupingBar}
+            contentContainerStyle={styles.groupingBarContent}
+          >
+            {availableGroupings.map((option) => {
+              const isActive = effectiveGrouping === option.key;
+              return (
+                <TouchableOpacity
+                  key={option.key}
+                  activeOpacity={0.75}
+                  onPress={() => setActiveGrouping(option.key)}
+                  style={[
+                    styles.groupingPill,
+                    isActive && styles.groupingPillActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.groupingPillText,
+                      isActive && styles.groupingPillTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+
+        {effectiveGrouping === 'none' ? (
+          <FlatList
+            data={cards}
+            keyExtractor={(item) => item.id}
+            renderItem={renderCard}
+            showsVerticalScrollIndicator={false}
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            contentContainerStyle={[
+              styles.list,
+              cards.length === 0 && !loading ? styles.listEmptyState : null,
+            ]}
+            ListEmptyComponent={listEmptyComponent}
+          />
+        ) : (
+          <SectionList
+            sections={sections}
+            keyExtractor={(item) => item.id}
+            renderItem={renderCard}
+            renderSectionHeader={renderSectionHeader}
+            showsVerticalScrollIndicator={false}
+            SectionSeparatorComponent={() => (
+              <View style={styles.sectionSeparator} />
+            )}
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            contentContainerStyle={[
+              styles.list,
+              cards.length === 0 && !loading ? styles.listEmptyState : null,
+            ]}
+            ListEmptyComponent={listEmptyComponent}
+            stickySectionHeadersEnabled={false}
+          />
+        )}
 
         <View style={styles.footer}>
           <ThemedButton
@@ -219,7 +377,6 @@ function HeaderAction({
   );
 }
 
-
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -257,6 +414,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  groupingBar: {
+    flexGrow: 0,
+  },
+  groupingBarContent: {
+    paddingHorizontal: 20,
+    paddingTop: 2,
+    paddingBottom: 10,
+    gap: 8,
+    flexDirection: 'row',
+  },
+  groupingPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  groupingPillActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  groupingPillText: {
+    color: theme.colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  groupingPillTextActive: {
+    color: theme.colors.primaryInk,
+  },
   list: {
     paddingHorizontal: 20,
     paddingTop: 8,
@@ -264,10 +451,23 @@ const styles = StyleSheet.create({
   },
   listEmptyState: {
     flexGrow: 1,
-    paddingBottom: 90, // button minHeight (52) + footer bottom offset (18)
+    paddingBottom: 90,
   },
   separator: {
     height: 14,
+  },
+  sectionSeparator: {
+    height: 6,
+  },
+  sectionHeader: {
+    paddingTop: 18,
+    paddingBottom: 10,
+  },
+  sectionHeaderText: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.4,
   },
   cardRow: {
     borderRadius: 24,
