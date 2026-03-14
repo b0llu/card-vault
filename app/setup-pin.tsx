@@ -78,12 +78,6 @@ export default function SetupPinScreen() {
               subtitle="Use your fingerprint to open the vault without typing your PIN each time."
             />
 
-            <View style={styles.detailCard}>
-              <FeaturePill label="Device-only" />
-              <FeaturePill label="Optional" />
-              <FeaturePill label="Secure Enclave" />
-            </View>
-
             <View style={styles.actions}>
               <ThemedButton
                 title="Enable Fingerprint"
@@ -160,14 +154,6 @@ function Hero({
       <Text style={styles.eyebrow}>{eyebrow}</Text>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>
-    </View>
-  );
-}
-
-function FeaturePill({ label }: { label: string }) {
-  return (
-    <View style={styles.featurePill}>
-      <Text style={styles.featurePillText}>{label}</Text>
     </View>
   );
 }

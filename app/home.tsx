@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   ScrollView,
   SectionList,
   StyleSheet,
@@ -238,72 +237,63 @@ export default function HomeScreen() {
   return (
     <AppBackground>
       <SafeAreaView style={styles.safe}>
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={styles.headerTitle}>Card Vault</Text>
+        <View style={styles.topChrome}>
+          <View style={styles.header}>
+            <View style={styles.headerCopy}>
+              <Text style={styles.headerTitle}>Card Vault</Text>
+            </View>
+
+            <View style={styles.headerActions}>
+              <HeaderAction
+                icon="shield"
+                label="Security"
+                onPress={() => router.push('/security')}
+              />
+              <HeaderAction
+                icon="settings"
+                label="Settings"
+                onPress={() => router.push('/settings')}
+              />
+            </View>
           </View>
 
-          <View style={styles.headerActions}>
-            <HeaderAction
-              icon="shield"
-              label="Security"
-              onPress={() => router.push('/security')}
-            />
-            <HeaderAction
-              icon="settings"
-              label="Settings"
-              onPress={() => router.push('/settings')}
-            />
+          <View style={styles.groupingBarShell}>
+            {showGroupingBar ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.groupingBar}
+                contentContainerStyle={styles.groupingBarContent}
+              >
+                {availableGroupings.map((option) => {
+                  const isActive = effectiveGrouping === option.key;
+                  return (
+                    <TouchableOpacity
+                      key={option.key}
+                      activeOpacity={0.75}
+                      onPress={() => setActiveGrouping(option.key)}
+                      style={[
+                        styles.groupingPill,
+                        isActive && styles.groupingPillActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.groupingPillText,
+                          isActive && styles.groupingPillTextActive,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            ) : null}
           </View>
         </View>
 
-        {showGroupingBar && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.groupingBar}
-            contentContainerStyle={styles.groupingBarContent}
-          >
-            {availableGroupings.map((option) => {
-              const isActive = effectiveGrouping === option.key;
-              return (
-                <TouchableOpacity
-                  key={option.key}
-                  activeOpacity={0.75}
-                  onPress={() => setActiveGrouping(option.key)}
-                  style={[
-                    styles.groupingPill,
-                    isActive && styles.groupingPillActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.groupingPillText,
-                      isActive && styles.groupingPillTextActive,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        )}
-
-        {effectiveGrouping === 'none' ? (
-          <FlatList
-            data={cards}
-            keyExtractor={(item) => item.id}
-            renderItem={renderCard}
-            showsVerticalScrollIndicator={false}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-            contentContainerStyle={[
-              styles.list,
-              cards.length === 0 && !loading ? styles.listEmptyState : null,
-            ]}
-            ListEmptyComponent={listEmptyComponent}
-          />
-        ) : (
+        <View style={styles.listWrap}>
           <SectionList
             sections={sections}
             keyExtractor={(item) => item.id}
@@ -321,7 +311,7 @@ export default function HomeScreen() {
             ListEmptyComponent={listEmptyComponent}
             stickySectionHeadersEnabled={false}
           />
-        )}
+        </View>
 
         <View style={styles.footer}>
           <ThemedButton
@@ -368,6 +358,9 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
   },
+  topChrome: {
+    flexShrink: 0,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -404,20 +397,27 @@ const styles = StyleSheet.create({
   groupingBar: {
     flexGrow: 0,
   },
+  groupingBarShell: {
+    minHeight: 48,
+    justifyContent: 'center',
+  },
   groupingBarContent: {
     paddingHorizontal: 20,
     paddingTop: 2,
     paddingBottom: 10,
     gap: 8,
     flexDirection: 'row',
+    alignItems: 'center',
   },
   groupingPill: {
+    height: 36,
     paddingHorizontal: 14,
-    paddingVertical: 7,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: 'rgba(255,255,255,0.04)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   groupingPillActive: {
     backgroundColor: theme.colors.primary,
@@ -426,10 +426,14 @@ const styles = StyleSheet.create({
   groupingPillText: {
     color: theme.colors.textMuted,
     fontSize: 13,
+    lineHeight: 16,
     fontWeight: '600',
   },
   groupingPillTextActive: {
     color: theme.colors.primaryInk,
+  },
+  listWrap: {
+    flex: 1,
   },
   list: {
     paddingHorizontal: 20,
