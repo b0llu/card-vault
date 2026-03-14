@@ -68,12 +68,6 @@ export default function SecurityScreen() {
             </Text>
           </View>
 
-          <View style={styles.summaryCard}>
-            <SecurityChip label="No cloud sync" />
-            <SecurityChip label="No analytics" />
-            <SecurityChip label="Device-only keys" />
-          </View>
-
           {SECURITY_POINTS.map((point) => (
             <View key={point.title} style={styles.pointCard}>
               <View style={styles.pointIconWrap}>
@@ -88,14 +82,6 @@ export default function SecurityScreen() {
         </ScrollView>
       </SafeAreaView>
     </AppBackground>
-  );
-}
-
-function SecurityChip({ label }: { label: string }) {
-  return (
-    <View style={styles.securityChip}>
-      <Text style={styles.securityChipText}>{label}</Text>
-    </View>
   );
 }
 
@@ -143,26 +129,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 330,
   },
-  summaryCard: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    justifyContent: 'center',
-    paddingBottom: 6,
-  },
-  securityChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  securityChipText: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-  },
   pointCard: {
     backgroundColor: theme.colors.surface,
     borderRadius: 22,
@@ -197,17 +163,5 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 13,
     lineHeight: 20,
-  },
-  bottomNote: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'flex-start',
-    paddingTop: 8,
-  },
-  bottomNoteText: {
-    flex: 1,
-    color: theme.colors.textSubtle,
-    fontSize: 12,
-    lineHeight: 18,
   },
 });

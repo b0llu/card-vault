@@ -35,7 +35,6 @@ interface PinInputProps {
   maxLength?: number;
   minLength?: number;
   onComplete: (pin: string) => void;
-  onError?: () => void;
   disabled?: boolean;
   label?: string;
   errorMessage?: string;

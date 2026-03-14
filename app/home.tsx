@@ -219,13 +219,6 @@ function HeaderAction({
   );
 }
 
-function InfoPill({ label }: { label: string }) {
-  return (
-    <View style={styles.infoPill}>
-      <Text style={styles.infoPillText}>{label}</Text>
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   safe: {
@@ -244,22 +237,10 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-  headerEyebrow: {
-    color: theme.colors.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
   headerTitle: {
     color: theme.colors.text,
     fontSize: 28,
     fontWeight: '700',
-  },
-  headerSubtitle: {
-    color: theme.colors.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
   },
   headerActions: {
     flexDirection: 'row',
@@ -284,79 +265,6 @@ const styles = StyleSheet.create({
   listEmptyState: {
     flexGrow: 1,
     paddingBottom: 90, // button minHeight (52) + footer bottom offset (18)
-  },
-  heroCard: {
-    borderRadius: 26,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: theme.colors.borderStrong,
-    backgroundColor: theme.colors.surfaceElevated,
-    marginBottom: 20,
-    gap: 12,
-  },
-  heroHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-  },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: theme.colors.primarySoft,
-  },
-  heroBadgeText: {
-    color: theme.colors.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  heroUsagePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  heroUsageText: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  heroTitle: {
-    color: theme.colors.text,
-    fontSize: 22,
-    fontWeight: '700',
-    lineHeight: 28,
-  },
-  heroText: {
-    color: theme.colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  heroPills: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  infoPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  infoPillText: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
   },
   separator: {
     height: 14,
@@ -454,10 +362,5 @@ const styles = StyleSheet.create({
     right: 20,
     bottom: 18,
     gap: 10,
-  },
-  footerHint: {
-    color: theme.colors.textSubtle,
-    fontSize: 12,
-    textAlign: 'center',
   },
 });

@@ -178,10 +178,6 @@ export default function EditCardScreen() {
 
               <Field label="Nickname (optional)" value={nickname} onChangeText={setNickname} placeholder="Travel Visa, Work Card…" autoCapitalize="words" />
 
-              <Field label="Bank Name (optional)" value={bankName} onChangeText={setBankName} placeholder="HDFC Bank, Chase…" autoCapitalize="words" />
-
-              <Field label="Card Type (optional)" value={cardType} onChangeText={setCardType} placeholder="Debit, Coral, International Debit…" autoCapitalize="words" />
-
               <View style={styles.row}>
                 <View style={styles.rowField}>
                   <Field label="Valid From Month" value={validFromMonth} onChangeText={(t) => setValidFromMonth(t.replace(/\D/g, '').slice(0, 2))} placeholder="MM" keyboardType="number-pad" maxLength={2} />
@@ -190,6 +186,10 @@ export default function EditCardScreen() {
                   <Field label="Valid From Year" value={validFromYear} onChangeText={(t) => setValidFromYear(t.replace(/\D/g, '').slice(0, 2))} placeholder="YY" keyboardType="number-pad" maxLength={2} />
                 </View>
               </View>
+
+              <Field label="Bank Name" value={bankName} onChangeText={setBankName} placeholder="Chase, Barclays, HDFC…" autoCapitalize="words" />
+
+              <Field label="Card Type" value={cardType} onChangeText={setCardType} placeholder="Debit, Credit, Prepaid…" autoCapitalize="words" />
             </ScrollView>
 
             <View style={styles.footer}>

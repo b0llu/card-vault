@@ -48,7 +48,6 @@ import { theme } from '../src/theme';
 type ScanSide = 'front' | 'back';
 
 const FIELD_PLACEHOLDER_COLOR = theme.colors.textMuted;
-const BG = theme.colors.background;
 
 function cardNumberMaxLength(isAmex: boolean) {
   return isAmex ? 17 : 19;
@@ -78,7 +77,6 @@ export default function AddCardScreen() {
   const [cvv, setCvv] = useState('');
   const [nickname, setNickname] = useState('');
 
-  // Extra fields — only shown when they have values
   const [bankName, setBankName] = useState('');
   const [cardType, setCardType] = useState('');
   const [validFromMonth, setValidFromMonth] = useState('');
@@ -89,10 +87,6 @@ export default function AddCardScreen() {
   const brand = detectCardBrand(cardNumber);
   const isAmex = brand === 'amex';
   const cvvMaxLength = isAmex ? 4 : 3;
-
-  const showBankName = bankName.length > 0;
-  const showCardType = cardType.length > 0;
-  const showValidFrom = validFromMonth.length > 0 || validFromYear.length > 0;
 
   // ── OCR ─────────────────────────────────────────────────────────────────────
 
@@ -488,51 +482,45 @@ export default function AddCardScreen() {
                   autoCapitalize="words"
                 />
 
-                {/* ── Extra fields — only shown when populated ── */}
-                {showValidFrom && (
-                  <View style={styles.row}>
-                    <View style={styles.rowField}>
-                      <Field
-                        label="Valid From Month"
-                        value={validFromMonth}
-                        onChangeText={(t) => setValidFromMonth(t.replace(/\D/g, '').slice(0, 2))}
-                        placeholder="MM"
-                        keyboardType="number-pad"
-                        maxLength={2}
-                      />
-                    </View>
-                    <View style={styles.rowField}>
-                      <Field
-                        label="Valid From Year"
-                        value={validFromYear}
-                        onChangeText={(t) => setValidFromYear(t.replace(/\D/g, '').slice(0, 2))}
-                        placeholder="YY"
-                        keyboardType="number-pad"
-                        maxLength={2}
-                      />
-                    </View>
+                {/* ── Extra fields ── */}
+                <View style={styles.row}>
+                  <View style={styles.rowField}>
+                    <Field
+                      label="Valid From Month"
+                      value={validFromMonth}
+                      onChangeText={(t) => setValidFromMonth(t.replace(/\D/g, '').slice(0, 2))}
+                      placeholder="MM"
+                      keyboardType="number-pad"
+                      maxLength={2}
+                    />
                   </View>
-                )}
+                  <View style={styles.rowField}>
+                    <Field
+                      label="Valid From Year"
+                      value={validFromYear}
+                      onChangeText={(t) => setValidFromYear(t.replace(/\D/g, '').slice(0, 2))}
+                      placeholder="YY"
+                      keyboardType="number-pad"
+                      maxLength={2}
+                    />
+                  </View>
+                </View>
 
-                {showBankName && (
-                  <Field
-                    label="Bank Name"
-                    value={bankName}
-                    onChangeText={setBankName}
-                    placeholder="HDFC Bank, Chase…"
-                    autoCapitalize="words"
-                  />
-                )}
+                <Field
+                  label="Bank Name"
+                  value={bankName}
+                  onChangeText={setBankName}
+                  placeholder="Chase, Barclays, HDFC…"
+                  autoCapitalize="words"
+                />
 
-                {showCardType && (
-                  <Field
-                    label="Card Type"
-                    value={cardType}
-                    onChangeText={setCardType}
-                    placeholder="Debit, Coral, International Debit…"
-                    autoCapitalize="words"
-                  />
-                )}
+                <Field
+                  label="Card Type"
+                  value={cardType}
+                  onChangeText={setCardType}
+                  placeholder="Debit, Credit, Prepaid…"
+                  autoCapitalize="words"
+                />
               </ScrollView>
 
               <View style={styles.saveFooter}>
@@ -599,10 +587,6 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-  screenBg: {
-    flex: 1,
-    backgroundColor: BG,
-  },
   safe: {
     flex: 1,
     backgroundColor: 'transparent',
