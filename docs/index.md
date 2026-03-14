@@ -180,8 +180,8 @@ If we make material changes to this Privacy Policy, we will update the **Last Up
 
 If you have any questions, concerns, or feedback regarding this Privacy Policy or Card Vault's privacy practices, please contact:
 
-**Email:** [your-email@example.com]
-**GitHub Issues:** [https://github.com/your-username/secure-card-vault/issues]
+**Email:** [samantdhruv@gmail.com]
+**GitHub Issues:** [https://github.com/b0llu/secure-card-vault/issues]
 
 > Replace the placeholders above with your actual contact details before publishing.
 
