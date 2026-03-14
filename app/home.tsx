@@ -274,7 +274,7 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View style={styles.groupingBarShell}>
+          <View style={[styles.groupingBarShell, !showGroupingBar && styles.groupingBarShellHidden]}>
             {showGroupingBar ? (
               <ScrollView
                 horizontal
@@ -417,6 +417,9 @@ const styles = StyleSheet.create({
   groupingBarShell: {
     minHeight: 48,
     justifyContent: 'center',
+  },
+  groupingBarShellHidden: {
+    minHeight: 0,
   },
   groupingBarContent: {
     paddingHorizontal: 20,
