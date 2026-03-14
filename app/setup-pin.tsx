@@ -74,8 +74,8 @@ export default function SetupPinScreen() {
             <Hero
               icon="shield"
               eyebrow="Faster unlock"
-              title="Enable biometrics?"
-              subtitle="Use Face ID or fingerprint to open the vault without typing your PIN each time."
+              title="Enable Fingerprint?"
+              subtitle="Use your fingerprint to open the vault without typing your PIN each time."
             />
 
             <View style={styles.detailCard}>
@@ -86,7 +86,7 @@ export default function SetupPinScreen() {
 
             <View style={styles.actions}>
               <ThemedButton
-                title="Enable Biometrics"
+                title="Enable Fingerprint"
                 onPress={() => handleEnableBiometrics(true)}
                 style={styles.button}
                 icon={
@@ -118,16 +118,10 @@ export default function SetupPinScreen() {
             title="Protect your vault"
             subtitle={
               step === 'create'
-                ? 'Create a 4-digit PIN to unlock your cards. It stays on this device only.'
-                : 'Re-enter the PIN once to confirm it before the vault is created.'
+                ? 'Create a 4-digit PIN to unlock your cards.'
+                : 'Re-enter the PIN once to confirm it.'
             }
           />
-
-          <View style={styles.detailCard}>
-            <FeaturePill label="Offline" />
-            <FeaturePill label="AES-256" />
-            <FeaturePill label="Auto-lock" />
-          </View>
 
           <View style={styles.pinCard}>
             <PinInput

@@ -211,7 +211,7 @@ export default function ExportScreen() {
             )}
 
             <View style={styles.warningCard}>
-              <Feather name="alert-triangle" size={16} color={theme.colors.warning} />
+              <Feather style={{marginTop: 3}} name="alert-triangle" size={16} color={theme.colors.warning} />
               <Text style={styles.warningText}>
                 If you forget this export password, the backup cannot be restored.
               </Text>

@@ -79,7 +79,7 @@ export async function getBiometricType(): Promise<string> {
   ) {
     return 'Fingerprint';
   }
-  return 'Biometrics';
+  return 'Fingerprint';
 }
 
 /** Whether biometric unlock is opted in by the user. */

@@ -243,10 +243,9 @@ export default function ImportScreen() {
             />
 
             <View style={styles.noteCard}>
-              <Feather name="shield" size={16} color={theme.colors.primary} />
+              <Feather style={{marginTop: 3}} name="shield" size={16} color={theme.colors.primary} />
               <Text style={styles.noteText}>
-                Import happens entirely on-device. The password and card data are
-                never sent anywhere.
+                Decrypted locally using your password. Nothing leaves your device.
               </Text>
             </View>
           </ScrollView>

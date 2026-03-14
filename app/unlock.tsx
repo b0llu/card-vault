@@ -89,7 +89,7 @@ export default function UnlockScreen() {
               activeOpacity={0.82}
             >
               <Feather name="shield" size={16} color={theme.colors.primary} />
-              <Text style={styles.biometricText}>Use biometrics instead</Text>
+              <Text style={styles.biometricText}>Use fingerprint instead</Text>
             </TouchableOpacity>
           ) : null}
         </ScrollView>

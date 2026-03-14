@@ -30,7 +30,7 @@ export default function SettingsScreen() {
   const [cardCount, setCardCount] = useState(0);
   const [biometricsAvailable, setBiometricsAvailableState] = useState(false);
   const [biometricsEnabled, setBiometricsEnabledState] = useState(false);
-  const [biometricLabel, setBiometricLabel] = useState('Biometrics');
+  const [biometricLabel, setBiometricLabel] = useState('Fingerprint');
   const [updatingBiometrics, setUpdatingBiometrics] = useState(false);
   const [modal, setModal] = useState<ModalConfig | null>(null);
 
@@ -44,7 +44,7 @@ export default function SettingsScreen() {
     setCardCount(totalCards);
     setBiometricsAvailableState(available);
     setBiometricsEnabledState(enabled);
-    setBiometricLabel(available ? await getBiometricType() : 'Biometrics');
+    setBiometricLabel(available ? await getBiometricType() : 'Fingerprint');
   }, []);
 
   useFocusEffect(
@@ -56,8 +56,8 @@ export default function SettingsScreen() {
   const handleToggleBiometrics = async (value: boolean) => {
     if (!biometricsAvailable) {
       setModal({
-        title: 'Biometrics Unavailable',
-        message: 'This device does not have Face ID or fingerprint unlock set up.',
+        title: 'Fingerprint Unavailable',
+        message: 'This device does not have fingerprint unlock set up.',
         buttons: [{ label: 'OK', variant: 'ghost', onPress: () => {} }],
       });
       return;
@@ -102,7 +102,7 @@ export default function SettingsScreen() {
                 <Text style={styles.rowTitle}>{biometricLabel}</Text>
                 <Text style={styles.rowSubtitle}>
                   {biometricsAvailable
-                    ? 'Use device biometrics for faster unlock.'
+                    ? 'Use your fingerprint for faster unlock.'
                     : 'Not available on this device yet.'}
                 </Text>
               </View>
@@ -132,6 +132,7 @@ export default function SettingsScreen() {
               title="Lock Now"
               subtitle="Immediately return the app to the unlock screen."
               onPress={handleLockNow}
+              noBorder
             />
           </View>
 
@@ -148,6 +149,7 @@ export default function SettingsScreen() {
               title="Import Backup"
               subtitle="Restore cards from a previously exported vault."
               onPress={() => router.push('/import')}
+              noBorder
             />
           </View>
 
@@ -158,14 +160,14 @@ export default function SettingsScreen() {
               title="Security & Privacy"
               subtitle="See how encryption, storage, and clipboard protection work."
               onPress={() => router.push('/security')}
+              noBorder
             />
           </View>
 
           <View style={styles.footerNote}>
-            <Feather name="moon" size={16} color={theme.colors.textSubtle} />
+            <Feather name="clock" size={16} color={theme.colors.textSubtle} />
             <Text style={styles.footerNoteText}>
-              The vault auto-locks after 30 seconds in the background. All card
-              data stays on this device.
+              The vault auto-locks after 30 seconds in the background.
             </Text>
           </View>
         </ScrollView>
@@ -185,14 +187,16 @@ function SettingRow({
   title,
   subtitle,
   onPress,
+  noBorder,
 }: {
   icon: React.ComponentProps<typeof Feather>['name'];
   title: string;
   subtitle: string;
   onPress: () => void;
+  noBorder?: boolean;
 }) {
   return (
-    <TouchableOpacity activeOpacity={0.82} onPress={onPress} style={styles.row}>
+    <TouchableOpacity activeOpacity={0.82} onPress={onPress} style={[styles.row, noBorder && styles.rowNoBorder]}>
       <View style={styles.rowIconWrap}>
         <Feather name={icon} size={18} color={theme.colors.primary} />
       </View>
@@ -294,6 +298,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
+  rowNoBorder: {
+    borderBottomWidth: 0,
+  },
   rowIconWrap: {
     width: 38,
     height: 38,
@@ -316,7 +323,7 @@ const styles = StyleSheet.create({
   footerNote: {
     flexDirection: 'row',
     gap: 10,
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingTop: 8,
   },
   footerNoteText: {

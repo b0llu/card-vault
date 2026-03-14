@@ -29,8 +29,8 @@ const SECURITY_POINTS = [
   },
   {
     icon: '🧬',
-    title: 'Biometric & PIN Protection',
-    body: 'The vault can require your PIN and optional biometrics, and it auto-locks after time in the background.',
+    title: 'Fingerprint & PIN Protection',
+    body: 'The vault can require your PIN and optional fingerprint unlock, and it auto-locks after time in the background.',
   },
   {
     icon: '📋',
