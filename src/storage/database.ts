@@ -21,7 +21,6 @@ import { Card, EncryptedCardRow } from '../types';
 import { detectCardBrand } from '../utils/cardUtils';
 
 const DB_NAME = 'securecardvault.db';
-const FREE_CARD_LIMIT = 3;
 
 let _db: SQLite.SQLiteDatabase | null = null;
 
@@ -67,16 +66,8 @@ export async function getCardCount(): Promise<number> {
 
 /**
  * Adds a new card after encrypting its data.
- * Throws if the free-tier limit (3 cards) is reached.
  */
 export async function addCard(card: Omit<Card, 'id'>): Promise<Card> {
-  const count = await getCardCount();
-  if (count >= FREE_CARD_LIMIT) {
-    throw new Error(
-      'Free version supports up to 3 cards. Delete a card to add a new one.',
-    );
-  }
-
   const db = await getDB();
   const id = generateId();
   const now = new Date().toISOString();
@@ -172,16 +163,12 @@ export async function deleteCard(id: string): Promise<void> {
 
 /**
  * Imports a list of cards (from backup) into the database.
- * Skips cards that would exceed the free limit.
  * Returns the number of cards actually imported.
  */
 export async function importCards(cards: Card[]): Promise<number> {
   let imported = 0;
 
   for (const card of cards) {
-    const count = await getCardCount();
-    if (count >= FREE_CARD_LIMIT) break;
-
     // Re-encrypt with the device's master key
     const db = await getDB();
     const now = new Date().toISOString();

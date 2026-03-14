@@ -26,8 +26,6 @@ import {
 } from '../src/utils/cardUtils';
 import { theme } from '../src/theme';
 
-const FREE_LIMIT = 3;
-
 type GroupingKey = 'none' | 'brand' | 'bank' | 'type' | 'expiry';
 
 interface GroupingOption {
@@ -103,13 +101,11 @@ export default function HomeScreen() {
   const [modal, setModal] = useState<ModalConfig | null>(null);
   const [activeGrouping, setActiveGrouping] = useState<GroupingKey>('none');
 
-  const remainingSlots = Math.max(FREE_LIMIT - count, 0);
-
   const usageLabel = useMemo(() => {
-    if (count === 0) return `0/${FREE_LIMIT} cards stored`;
-    if (remainingSlots === 0) return `${count}/${FREE_LIMIT} cards stored · vault full`;
-    return `${count}/${FREE_LIMIT} cards stored · ${remainingSlots} slot${remainingSlots === 1 ? '' : 's'} left`;
-  }, [count, remainingSlots]);
+    if (count === 0) return 'No cards stored';
+    if (count === 1) return '1 card stored';
+    return `${count} cards stored`;
+  }, [count]);
 
   const loadCards = useCallback(async () => {
     setLoading(true);
@@ -156,14 +152,6 @@ export default function HomeScreen() {
   );
 
   const handleAddCard = () => {
-    if (count >= FREE_LIMIT) {
-      setModal({
-        title: 'Card Limit Reached',
-        message: 'Free version supports up to 3 cards. Delete a card to add a new one.',
-        buttons: [{ label: 'OK', variant: 'ghost', onPress: () => {} }],
-      });
-      return;
-    }
     router.push('/add-card');
   };
 
@@ -339,7 +327,6 @@ export default function HomeScreen() {
           <ThemedButton
             title="Add Card"
             onPress={handleAddCard}
-            disabled={count >= FREE_LIMIT}
             icon={
               <Feather
                 name="plus"
