@@ -14,18 +14,22 @@
 const { withGradleProperties } = require('@expo/config-plugins');
 
 const KOTLIN_VERSION = '1.9.24';
+const TARGET_SDK_VERSION = '35';
 
 const withKotlinVersion = (config) => {
   return withGradleProperties(config, (mod) => {
     const properties = mod.modResults;
 
-    // Remove any existing android.kotlinVersion entry first
+    // Remove any existing entries first
     const filtered = properties.filter(
-      (item) => !(item.type === 'property' && item.key === 'android.kotlinVersion'),
+      (item) =>
+        !(item.type === 'property' && item.key === 'android.kotlinVersion') &&
+        !(item.type === 'property' && item.key === 'android.targetSdkVersion'),
     );
 
-    // Add the pinned value
+    // Add the pinned values
     filtered.push({ type: 'property', key: 'android.kotlinVersion', value: KOTLIN_VERSION });
+    filtered.push({ type: 'property', key: 'android.targetSdkVersion', value: TARGET_SDK_VERSION });
 
     mod.modResults = filtered;
     return mod;
