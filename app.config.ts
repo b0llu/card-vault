@@ -18,12 +18,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: false,
-    bundleIdentifier: 'com.securecardvault.free',
+    bundleIdentifier: 'com.cardvault.free',
     infoPlist: {
       NSCameraUsageDescription:
-        'Card Vault uses the camera to scan your credit/debit cards via OCR.',
-      NSFaceIDUsageDescription:
-        'Card Vault uses biometric authentication to unlock your encrypted vault.',
+        'Card Vault uses the camera to scan and capture document details.',
       UIFileSharingEnabled: true,
       LSSupportsOpeningDocumentsInPlace: true,
       UIBackgroundModes: [],
@@ -34,8 +32,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#0E0E0E',
     },
-    package: 'com.securecardvault.free',
-    versionCode: 4,
+    package: 'com.cardvault.free',
+    versionCode: 1,
     permissions: [
       'android.permission.CAMERA',
       'android.permission.USE_BIOMETRIC',
@@ -45,18 +43,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     'expo-secure-store',
-    [
-      'expo-local-authentication',
-      {
-        faceIDPermission:
-          'Allow Card Vault to use biometric authentication to unlock your vault.',
-      },
-    ],
+    'expo-local-authentication',
     [
       'react-native-vision-camera',
       {
         cameraPermissionText:
-          'Card Vault needs camera access to scan your credit/debit cards.',
+          'Vault needs camera access to scan and capture document details.',
         enableMicrophonePermission: false,
       },
     ],
@@ -73,9 +65,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     router: {
       origin: false,
     },
-    freeCardLimit: 3,
     eas: {
-      projectId: '079016eb-5a11-4140-a036-b865443bbd25',
+      projectId: 'b9ccff49-9170-4978-9ac1-9f34ae03e04b',
     },
   },
 });
