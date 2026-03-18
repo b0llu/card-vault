@@ -32,7 +32,7 @@ export const VAULT_FILE_EXTENSION = '.securevault';
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 
-const PBKDF2_ITERATIONS = 10_000;
+const PBKDF2_ITERATIONS = 200_000;
 const APP_BACKUP_DIRECTORY = 'backups';
 const ANDROID_EXPORT_DIRECTORY = 'Card Vault';
 const ANDROID_EXPORT_MIME_TYPE = 'application/json';
@@ -252,8 +252,8 @@ export async function decryptVaultFile(
     );
   }
 
-  // 4. Derive key from password — fall back to 100k for exports made before v1.1
-  const iterations = exportData.iterations ?? 100_000;
+  // 4. Derive key from password — fall back to 10k for exports made before the 200k upgrade
+  const iterations = exportData.iterations ?? 10_000;
   const key = deriveKeyFromPassword(password, exportData.salt, iterations);
   const iv = CryptoJS.enc.Hex.parse(exportData.iv);
 

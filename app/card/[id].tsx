@@ -69,7 +69,11 @@ export default function CardDetailScreen() {
       return () => {
         if (cvvTimer.current) clearTimeout(cvvTimer.current);
         if (numberTimer.current) clearTimeout(numberTimer.current);
-        if (clipboardTimer.current) clearTimeout(clipboardTimer.current);
+        if (clipboardTimer.current) {
+          clearTimeout(clipboardTimer.current);
+          // Clear clipboard immediately when leaving the screen
+          Clipboard.setStringAsync('').catch(() => {});
+        }
       };
     }, [id]),
   );

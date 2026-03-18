@@ -22,9 +22,9 @@ import {
   VAULT_FILE_EXTENSION,
 } from '../src/services/exportService';
 import {
-  clearAllCards,
   getCardCount,
   importCards,
+  replaceAllCards,
 } from '../src/storage/database';
 import { theme } from '../src/theme';
 
@@ -83,8 +83,9 @@ export default function ImportScreen() {
   const doImport = async (replace: boolean, cards: Awaited<ReturnType<typeof decryptVaultFile>>) => {
     setImporting(true);
     try {
-      if (replace) await clearAllCards();
-      const imported = await importCards(cards);
+      const imported = replace
+        ? await replaceAllCards(cards)
+        : await importCards(cards);
       setPassword('');
       showModal({
         title: 'Import Complete',

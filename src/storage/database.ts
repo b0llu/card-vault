@@ -16,6 +16,7 @@
  */
 
 import * as SQLite from 'expo-sqlite';
+import * as Crypto from 'expo-crypto';
 import { encryptData, decryptData } from '../crypto/encryption';
 import { Card, EncryptedCardRow } from '../types';
 import { detectCardBrand } from '../utils/cardUtils';
@@ -43,12 +44,13 @@ async function getDB(): Promise<SQLite.SQLiteDatabase> {
   return _db;
 }
 
-/** Generates a short unique ID. */
-function generateId(): string {
-  return (
-    Date.now().toString(36) +
-    Math.random().toString(36).slice(2, 8)
-  ).toUpperCase();
+/** Generates a cryptographically random 12-char hex ID. */
+async function generateId(): Promise<string> {
+  const bytes = await Crypto.getRandomBytesAsync(6);
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -69,7 +71,7 @@ export async function getCardCount(): Promise<number> {
  */
 export async function addCard(card: Omit<Card, 'id'>): Promise<Card> {
   const db = await getDB();
-  const id = generateId();
+  const id = await generateId();
   const now = new Date().toISOString();
 
   // Ensure brand is always set
@@ -190,4 +192,36 @@ export async function importCards(cards: Card[]): Promise<number> {
 export async function clearAllCards(): Promise<void> {
   const db = await getDB();
   await db.runAsync('DELETE FROM cards');
+}
+
+/**
+ * Atomically replaces the entire vault with the provided cards.
+ * The DELETE and all INSERTs run inside a single SQLite transaction —
+ * if anything fails the original data is fully preserved.
+ *
+ * @returns Number of cards written
+ */
+export async function replaceAllCards(cards: Card[]): Promise<number> {
+  const db = await getDB();
+
+  // Pre-encrypt all cards before entering the transaction so async work
+  // doesn't hold the transaction open longer than necessary.
+  const rows: { card: Card; encryptedData: string }[] = [];
+  for (const card of cards) {
+    rows.push({ card, encryptedData: await encryptData(JSON.stringify(card)) });
+  }
+
+  const now = new Date().toISOString();
+
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM cards');
+    for (const { card, encryptedData } of rows) {
+      await db.runAsync(
+        'INSERT INTO cards (id, encrypted_data, created_at, updated_at) VALUES (?, ?, ?, ?)',
+        [card.id, encryptedData, now, now],
+      );
+    }
+  });
+
+  return rows.length;
 }

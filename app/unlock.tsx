@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -15,7 +15,10 @@ import { PinInput } from '../src/components/PinInput';
 import { useAuth } from '../src/context/AuthContext';
 import {
   authenticateWithBiometrics,
+  clearPinLockout,
+  getPinLockout,
   isBiometricsEnabled,
+  recordPinFailure,
   verifyPin,
 } from '../src/services/authService';
 import { theme } from '../src/theme';
@@ -25,8 +28,36 @@ export default function UnlockScreen() {
   const { unlock } = useAuth();
   const [errorMsg, setErrorMsg] = useState('');
   const [biometricsEnabled, setBiometricsEnabled] = useState(false);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const handleSuccess = useCallback(() => {
+  const isLocked = lockoutSeconds > 0;
+
+  const startCountdown = useCallback((seconds: number) => {
+    setLockoutSeconds(seconds);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    countdownRef.current = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownRef.current!);
+          countdownRef.current = null;
+          setErrorMsg('');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, []);
+
+  const handleSuccess = useCallback(async () => {
+    await clearPinLockout();
     unlock();
     router.replace('/home');
   }, [unlock, router]);
@@ -34,32 +65,56 @@ export default function UnlockScreen() {
   const tryBiometrics = useCallback(async () => {
     const success = await authenticateWithBiometrics();
     if (success) {
-      handleSuccess();
+      await handleSuccess();
     }
   }, [handleSuccess]);
 
   useEffect(() => {
     (async () => {
+      // Check for an existing lockout before showing anything
+      const lockout = await getPinLockout();
+      setFailedAttempts(lockout.failedAttempts);
+      if (lockout.locked) {
+        startCountdown(lockout.secondsRemaining);
+      }
+
       const enabled = await isBiometricsEnabled();
       setBiometricsEnabled(enabled);
 
-      if (enabled) {
+      if (enabled && !lockout.locked) {
         await tryBiometrics();
       }
     })();
-  }, [tryBiometrics]);
+  }, [tryBiometrics, startCountdown]);
 
   const handlePinComplete = async (pin: string) => {
     const valid = await verifyPin(pin);
 
     if (valid) {
       setErrorMsg('');
-      handleSuccess();
+      await handleSuccess();
       return;
     }
 
-    setErrorMsg('Incorrect PIN. Try again.');
+    const status = await recordPinFailure();
+    setFailedAttempts(status.failedAttempts);
+
+    if (status.locked) {
+      setErrorMsg('Too many attempts. Please wait.');
+      startCountdown(status.secondsRemaining);
+    } else {
+      const remaining = Math.max(0, 5 - status.failedAttempts);
+      if (remaining > 0) {
+        setErrorMsg(`Incorrect PIN. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`);
+      } else {
+        setErrorMsg('Incorrect PIN. Try again.');
+      }
+    }
   };
+
+  const lockoutMessage = isLocked
+    ? 'Too many failed attempts.\nPlease wait before trying again.'
+    : null;
 
   return (
     <AppBackground>
@@ -72,24 +127,38 @@ export default function UnlockScreen() {
             <Text style={styles.title}>Welcome back</Text>
           </View>
 
-          <View style={styles.pinCard}>
-            <PinInput
-              minLength={4}
-              maxLength={4}
-              label="Enter PIN"
-              onComplete={handlePinComplete}
-              errorMessage={errorMsg}
-            />
+          <View style={[styles.pinCard, isLocked && styles.pinCardLocked]}>
+            {isLocked ? (
+              <View style={styles.lockoutContainer}>
+                <Feather name="lock" size={28} color={theme.colors.warning} />
+                <Text style={styles.lockoutTitle}>Vault Locked</Text>
+                <Text style={styles.lockoutMessage}>{lockoutMessage}</Text>
+                <Text style={styles.lockoutCountdown}>{lockoutSeconds}s</Text>
+                {failedAttempts >= 10 && (
+                  <Text style={styles.lockoutHint}>
+                    If you have forgotten your PIN, you will need to reinstall the app to reset it.
+                  </Text>
+                )}
+              </View>
+            ) : (
+              <PinInput
+                minLength={4}
+                maxLength={4}
+                label="Enter PIN"
+                onComplete={handlePinComplete}
+                errorMessage={errorMsg}
+              />
+            )}
           </View>
 
-          {biometricsEnabled ? (
+          {biometricsEnabled && !isLocked ? (
             <TouchableOpacity
               style={styles.biometricButton}
               onPress={tryBiometrics}
               activeOpacity={0.82}
             >
               <Feather name="shield" size={16} color={theme.colors.primary} />
-              <Text style={styles.biometricText}>Use fingerprint instead</Text>
+              <Text style={styles.biometricText}>Use biometrics instead</Text>
             </TouchableOpacity>
           ) : null}
         </ScrollView>
@@ -140,6 +209,39 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     paddingVertical: 28,
     paddingHorizontal: 18,
+  },
+  pinCardLocked: {
+    borderColor: theme.colors.warning,
+  },
+  lockoutContainer: {
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+  },
+  lockoutTitle: {
+    color: theme.colors.warning,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  lockoutMessage: {
+    color: theme.colors.textMuted,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  lockoutCountdown: {
+    color: theme.colors.text,
+    fontSize: 36,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  lockoutHint: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 4,
+    paddingHorizontal: 8,
   },
   biometricButton: {
     flexDirection: 'row',
