@@ -19,6 +19,7 @@ import React, {
 } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { hasPin } from '../services/authService';
+import { clearMasterKeyCache } from '../crypto/encryption';
 
 const AUTO_LOCK_TIMEOUT_MS = 30_000; // 30 seconds
 
@@ -54,7 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const appState = useRef<AppStateStatus>(AppState.currentState);
 
   const unlock = useCallback(() => setIsUnlocked(true), []);
-  const lock = useCallback(() => setIsUnlocked(false), []);
+  const lock = useCallback(() => {
+    clearMasterKeyCache();
+    setIsUnlocked(false);
+  }, []);
 
   useEffect(() => {
     const subscription = AppState.addEventListener(
@@ -74,7 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (backgroundTimestamp.current !== null) {
             const elapsed = Date.now() - backgroundTimestamp.current;
             if (elapsed >= AUTO_LOCK_TIMEOUT_MS) {
-              // 30 seconds exceeded — lock the vault
+              // 30 seconds exceeded — lock the vault and evict the key from memory
+              clearMasterKeyCache();
               setIsUnlocked(false);
             }
             backgroundTimestamp.current = null;

@@ -146,6 +146,10 @@ export default function EditCardScreen() {
   };
 
   const handleSave = async () => {
+    if (!id) {
+      setModal({ title: 'Error', message: 'Card ID is missing.', buttons: [{ label: 'OK', variant: 'ghost', onPress: () => {} }] });
+      return;
+    }
     const cleanNumber = cardNumber.replace(/\D/g, '');
 
     if (!name.trim()) {
@@ -183,7 +187,7 @@ export default function EditCardScreen() {
 
     setSaving(true);
     try {
-      await updateCard(id!, {
+      await updateCard(id, {
         name: name.trim(),
         cardNumber: cleanNumber,
         expiryMonth: expiryMonth.padStart(2, '0'),
@@ -340,6 +344,7 @@ function Field({
   secureTextEntry?: boolean;
   autoCapitalize?: 'none' | 'words' | 'sentences' | 'characters';
   trailingAccessory?: React.ReactNode;
+  required?: boolean;
 }) {
   return (
     <View style={styles.fieldContainer}>

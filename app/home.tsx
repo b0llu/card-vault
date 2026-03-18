@@ -18,7 +18,7 @@ import { AppBackground } from '../src/components/AppBackground';
 import { AppModal, ModalConfig } from '../src/components/AppModal';
 import { ThemedButton } from '../src/components/ThemedButton';
 import { Card } from '../src/types';
-import { getCardCount, getCards } from '../src/storage/database';
+import { getCards } from '../src/storage/database';
 import {
   formatCardNumber,
   getBrandDisplayName,
@@ -98,16 +98,14 @@ function groupCards(
 export default function HomeScreen() {
   const router = useRouter();
   const [cards, setCards] = useState<Card[]>([]);
-  const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<ModalConfig | null>(null);
   const [activeGrouping, setActiveGrouping] = useState<GroupingKey>('none');
 
   const loadCards = useCallback(async () => {
     setLoading(true);
-    const [fetched, total] = await Promise.all([getCards(), getCardCount()]);
+    const fetched = await getCards();
     setCards(fetched);
-    setCount(total);
     setLoading(false);
   }, []);
 
@@ -231,6 +229,9 @@ export default function HomeScreen() {
                         styles.groupingPill,
                         isActive && styles.groupingPillActive,
                       ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Group by ${option.label}`}
+                      accessibilityState={{ selected: isActive }}
                     >
                       <Text
                         style={[
@@ -337,8 +338,20 @@ function CardListItem({ item, onNavigate }: { item: Card; onNavigate: () => void
     startReveal();
   };
 
+  const cardLabel = [
+    brandLabel,
+    item.nickname,
+    item.bankName,
+    `ending ${item.cardNumber.slice(-4)}`,
+  ].filter(Boolean).join(', ');
+
   return (
-    <TouchableOpacity activeOpacity={0.84} onPress={onNavigate}>
+    <TouchableOpacity
+      activeOpacity={0.84}
+      onPress={onNavigate}
+      accessibilityRole="button"
+      accessibilityLabel={`${cardLabel}. Tap to view details.`}
+    >
       <LinearGradient
         colors={appearance.gradient}
         start={{ x: 0, y: 0 }}
@@ -429,6 +442,8 @@ function CardListItem({ item, onNavigate }: { item: Card; onNavigate: () => void
             ]}
             activeOpacity={0.75}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel={revealed ? 'Hide card number and CVV' : 'Reveal card number and CVV'}
           >
             <Feather
               name={revealed ? 'eye-off' : 'eye'}

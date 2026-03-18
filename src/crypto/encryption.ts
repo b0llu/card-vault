@@ -20,12 +20,27 @@ import CryptoJS from 'crypto-js';
 // SecureStore key for the master encryption key
 const MASTER_KEY_STORE_ID = 'scv_master_encryption_key_v1';
 
+// In-memory cache — avoids a SecureStore round-trip on every card operation.
+// Cleared by clearMasterKeyCache() when the vault is locked.
+let _cachedMasterKey: CryptoJS.lib.WordArray | null = null;
+
+/**
+ * Call this when the vault locks so the key is not held in memory
+ * while the app is in the background.
+ */
+export function clearMasterKeyCache(): void {
+  _cachedMasterKey = null;
+}
+
 /**
  * Returns the master AES-256 encryption key.
- * Generates and stores it securely on first call.
+ * Reads from SecureStore once per session; subsequent calls use the
+ * in-memory cache.
  * SECURITY NOTE: This key is only ever held in memory during active use.
  */
 async function getMasterKey(): Promise<CryptoJS.lib.WordArray> {
+  if (_cachedMasterKey) return _cachedMasterKey;
+
   let keyHex = await SecureStore.getItemAsync(MASTER_KEY_STORE_ID);
 
   if (!keyHex) {
@@ -42,7 +57,8 @@ async function getMasterKey(): Promise<CryptoJS.lib.WordArray> {
     });
   }
 
-  return CryptoJS.enc.Hex.parse(keyHex);
+  _cachedMasterKey = CryptoJS.enc.Hex.parse(keyHex);
+  return _cachedMasterKey;
 }
 
 /**

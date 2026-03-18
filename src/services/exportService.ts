@@ -42,8 +42,8 @@ function createExportFilename() {
 }
 
 async function buildExportPayload(password: string): Promise<string> {
-  if (!password || password.length < 6) {
-    throw new Error('Export password must be at least 6 characters.');
+  if (!password || password.length < 10) {
+    throw new Error('Export password must be at least 10 characters.');
   }
 
   const cards = await getCards();

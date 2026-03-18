@@ -108,8 +108,12 @@ export const PinInput: React.FC<PinInputProps> = ({
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
 
-      {/* Dot indicators */}
-      <Animated.View style={[styles.dotsRow, { transform: [{ translateX: shakeX }] }]}>
+      {/* Dot indicators — announced as a group to screen readers */}
+      <Animated.View
+        style={[styles.dotsRow, { transform: [{ translateX: shakeX }] }]}
+        accessible
+        accessibilityLabel={`${pin.length} of ${maxLength} digits entered`}
+      >
         {Array.from({ length: maxLength }).map((_, i) => (
           <View
             key={i}
@@ -122,7 +126,13 @@ export const PinInput: React.FC<PinInputProps> = ({
       </Animated.View>
 
       {errorMessage ? (
-        <Text style={styles.errorText}>{errorMessage}</Text>
+        <Text
+          style={styles.errorText}
+          accessibilityLiveRegion="polite"
+          accessibilityRole="alert"
+        >
+          {errorMessage}
+        </Text>
       ) : null}
 
       {/* Numpad */}
@@ -136,6 +146,9 @@ export const PinInput: React.FC<PinInputProps> = ({
                 onPress={() => handlePress(key)}
                 disabled={disabled || !key}
                 activeOpacity={0.6}
+                accessibilityRole="button"
+                accessibilityLabel={key === '⌫' ? 'Delete' : key || undefined}
+                accessibilityState={{ disabled: disabled || !key }}
               >
                 {key === '⌫' ? (
                   <Feather

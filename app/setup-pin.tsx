@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -27,6 +28,7 @@ export default function SetupPinScreen() {
   const [step, setStep] = useState<Step>('create');
   const [firstPin, setFirstPin] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [saving, setSaving] = useState(false);
   const [modal, setModal] = useState<ModalConfig | null>(null);
 
   const handleCreate = async (pin: string) => {
@@ -43,6 +45,9 @@ export default function SetupPinScreen() {
       return;
     }
 
+    setSaving(true);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     try {
       await setupPin(pin);
       await refreshPinExists();
@@ -58,6 +63,8 @@ export default function SetupPinScreen() {
         message: err.message,
         buttons: [{ label: 'OK', variant: 'ghost', onPress: () => {} }],
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -118,14 +125,21 @@ export default function SetupPinScreen() {
           />
 
           <View style={styles.pinCard}>
-            <PinInput
-              key={step}
-              minLength={4}
-              maxLength={4}
-              label={step === 'create' ? 'Create PIN' : 'Confirm PIN'}
-              onComplete={step === 'create' ? handleCreate : handleConfirm}
-              errorMessage={errorMsg}
-            />
+            {saving ? (
+              <View style={styles.savingContainer}>
+                <ActivityIndicator color={theme.colors.primary} size="large" />
+                <Text style={styles.savingText}>Setting up vault…</Text>
+              </View>
+            ) : (
+              <PinInput
+                key={step}
+                minLength={4}
+                maxLength={4}
+                label={step === 'create' ? 'Create PIN' : 'Confirm PIN'}
+                onComplete={step === 'create' ? handleCreate : handleConfirm}
+                errorMessage={errorMsg}
+              />
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -230,6 +244,16 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     paddingVertical: 28,
     paddingHorizontal: 18,
+  },
+  savingContainer: {
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 28,
+  },
+  savingText: {
+    color: theme.colors.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
   },
   actions: {
     width: '100%',

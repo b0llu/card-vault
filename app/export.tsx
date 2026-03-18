@@ -34,10 +34,10 @@ export default function ExportScreen() {
   const [modal, setModal] = useState<ModalConfig | null>(null);
 
   const handleExport = async () => {
-    if (password.length < 6) {
+    if (password.length < 10) {
       setModal({
         title: 'Weak Password',
-        message: 'Export password must be at least 6 characters.',
+        message: 'Export password must be at least 10 characters.',
         buttons: [{ label: 'OK', variant: 'ghost', onPress: () => {} }],
       });
       return;
@@ -131,7 +131,7 @@ export default function ExportScreen() {
                   style={[styles.input, styles.inputNoBorder]}
                   value={password}
                   onChangeText={setPassword}
-                  placeholder="At least 6 characters"
+                  placeholder="At least 10 characters"
                   placeholderTextColor={theme.colors.textMuted}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
@@ -203,7 +203,7 @@ export default function ExportScreen() {
                 title="Export Backup"
                 onPress={handleExport}
                 loading={exporting}
-                disabled={password.length < 6 || password !== confirmPassword}
+                disabled={password.length < 10 || password !== confirmPassword}
                 icon={
                   <Feather name="upload" size={18} color={theme.colors.primaryInk} />
                 }

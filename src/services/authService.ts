@@ -25,7 +25,12 @@ const PIN_HASH_KEY = 'scv_pin_hash_v1';
 const PIN_LOCKOUT_KEY = 'scv_pin_lockout_v1';
 const BIOMETRICS_ENABLED_KEY = 'scv_biometrics_enabled_v1';
 
-const PIN_PBKDF2_ITERATIONS = 100_000;
+// PIN is stored in hardware-backed SecureStore (iOS Keychain / Android Keystore).
+// The primary defenses are hardware isolation + the brute-force lockout above,
+// not the iteration count. 10,000 iterations adds meaningful cost to offline
+// attacks on extracted hashes without making the UI feel frozen (~1 s on device).
+// Export backups use 200,000 because they can be copied and attacked offline.
+const PIN_PBKDF2_ITERATIONS = 10_000;
 const MAX_ATTEMPTS_BEFORE_LOCKOUT = 5;
 // Lockout durations in seconds, indexed by (failedAttempts - MAX_ATTEMPTS_BEFORE_LOCKOUT),
 // clamped at the last value for any higher count.

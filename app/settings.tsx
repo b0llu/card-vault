@@ -208,7 +208,7 @@ export default function SettingsScreen() {
             <View style={styles.rowCopy}>
               <Text style={styles.dangerTitle}>Purge Vault</Text>
               <Text style={styles.dangerSubtitle}>
-                Permanently delete all {cardCount} card{cardCount !== 1 ? 's' : ''}. This cannot be undone.
+                Permanently delete all cards. This cannot be undone.
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color={theme.colors.danger} style={{ opacity: 0.6 }} />

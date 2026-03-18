@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -28,6 +29,7 @@ export default function UnlockScreen() {
   const { unlock } = useAuth();
   const [errorMsg, setErrorMsg] = useState('');
   const [biometricsEnabled, setBiometricsEnabled] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -88,7 +90,12 @@ export default function UnlockScreen() {
   }, [tryBiometrics, startCountdown]);
 
   const handlePinComplete = async (pin: string) => {
+    setVerifying(true);
+    // Yield to the JS event loop so React can render the spinner
+    // before PBKDF2 blocks the thread.
+    await new Promise((resolve) => setTimeout(resolve, 50));
     const valid = await verifyPin(pin);
+    setVerifying(false);
 
     if (valid) {
       setErrorMsg('');
@@ -128,7 +135,12 @@ export default function UnlockScreen() {
           </View>
 
           <View style={[styles.pinCard, isLocked && styles.pinCardLocked]}>
-            {isLocked ? (
+            {verifying ? (
+              <View style={styles.verifyingContainer}>
+                <ActivityIndicator color={theme.colors.primary} size="large" />
+                <Text style={styles.verifyingText}>Verifying…</Text>
+              </View>
+            ) : isLocked ? (
               <View style={styles.lockoutContainer}>
                 <Feather name="lock" size={28} color={theme.colors.warning} />
                 <Text style={styles.lockoutTitle}>Vault Locked</Text>
@@ -212,6 +224,16 @@ const styles = StyleSheet.create({
   },
   pinCardLocked: {
     borderColor: theme.colors.warning,
+  },
+  verifyingContainer: {
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 28,
+  },
+  verifyingText: {
+    color: theme.colors.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
   },
   lockoutContainer: {
     alignItems: 'center',

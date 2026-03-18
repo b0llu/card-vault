@@ -212,7 +212,7 @@ export default function AddCardScreen() {
 
   const handlePickImage = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: false,
       quality: 1,
     });

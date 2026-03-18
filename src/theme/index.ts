@@ -11,7 +11,7 @@ export const theme = {
     borderStrong: 'rgba(255, 255, 255, 0.16)',
     text: '#F5F5F5',
     textMuted: '#888888',
-    textSubtle: '#484848',
+    textSubtle: '#808080',
     primary: '#B8B8B8',
     primarySoft: 'rgba(184, 184, 184, 0.10)',
     primaryInk: '#0A0A0A',

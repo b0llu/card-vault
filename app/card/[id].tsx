@@ -242,7 +242,12 @@ export default function CardDetailScreen() {
         </View>
 
         <Animated.View style={[styles.toast, { opacity: toastOpacity }]} pointerEvents="none">
-          <Text style={styles.toastText}>{copiedField}</Text>
+          <Text
+            style={styles.toastText}
+            accessibilityLiveRegion="polite"
+          >
+            {copiedField}
+          </Text>
         </Animated.View>
       </SafeAreaView>
 
@@ -289,6 +294,12 @@ function InteractiveInfoRow({
       style={styles.interactiveRow}
       onPress={onPress}
       activeOpacity={0.72}
+      accessibilityRole="button"
+      accessibilityLabel={
+        revealed
+          ? `Copy ${label}`
+          : `Reveal ${label}. Tap once to reveal, tap again to copy.`
+      }
     >
       <Text style={styles.infoLabel}>{label}</Text>
 
