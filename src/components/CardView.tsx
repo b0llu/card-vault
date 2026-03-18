@@ -12,22 +12,25 @@ import { Card } from '../types';
 import {
   getBrandDisplayName,
   maskCardNumber,
+  formatCardNumber,
   formatExpiry,
 } from '../utils/cardUtils';
 import { getResolvedCardAppearance } from '../utils/cardAppearance';
 import { shadows } from '../theme';
 
-const CARD_WIDTH = Math.min(Dimensions.get('window').width - 40, 390);
-const CARD_HEIGHT = CARD_WIDTH * 0.6;
+const CARD_WIDTH = Math.min(Dimensions.get('window').width, 430);
+const CARD_HEIGHT = CARD_WIDTH * 0.53;
 
 interface CardViewProps {
   card: Card;
   showCVV?: boolean;
+  showNumber?: boolean;
 }
 
 export const CardView: React.FC<CardViewProps> = ({
   card,
   showCVV = false,
+  showNumber = false,
 }) => {
   const appearance = getResolvedCardAppearance(card);
   const brandLabel = getBrandDisplayName(card.brand, card.customBrandName);
@@ -82,7 +85,7 @@ export const CardView: React.FC<CardViewProps> = ({
 
       {/* Card number */}
       <Text style={[styles.cardNumber, { color: appearance.text }]}>
-        {maskCardNumber(card.cardNumber)}
+        {showNumber ? formatCardNumber(card.cardNumber) : maskCardNumber(card.cardNumber)}
       </Text>
 
       {/* Footer row */}

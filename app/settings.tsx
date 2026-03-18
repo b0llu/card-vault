@@ -20,7 +20,7 @@ import {
   isBiometricsEnabled,
   setBiometricsEnabled as persistBiometricsEnabled,
 } from '../src/services/authService';
-import { getCardCount } from '../src/storage/database';
+import { clearAllCards, getCardCount } from '../src/storage/database';
 import { sharedStyles, theme } from '../src/theme';
 
 export default function SettingsScreen() {
@@ -83,6 +83,38 @@ export default function SettingsScreen() {
   const handleLockNow = () => {
     lock();
     router.replace('/unlock');
+  };
+
+  const handlePurgeVault = () => {
+    setModal({
+      title: 'Purge Vault',
+      message: `This will permanently delete all ${cardCount} card${cardCount !== 1 ? 's' : ''} stored in the vault. This action cannot be undone.`,
+      buttons: [
+        {
+          label: 'Continue',
+          variant: 'danger',
+          onPress: () => {
+            setModal({
+              title: 'Are you absolutely sure?',
+              message: 'All your card data will be wiped immediately and cannot be recovered. The vault will lock after purging.',
+              buttons: [
+                {
+                  label: 'Yes, purge everything',
+                  variant: 'danger',
+                  onPress: async () => {
+                    await clearAllCards();
+                    lock();
+                    router.replace('/unlock');
+                  },
+                },
+                { label: 'Cancel', variant: 'ghost', onPress: () => {} },
+              ],
+            });
+          },
+        },
+        { label: 'Cancel', variant: 'ghost', onPress: () => {} },
+      ],
+    });
   };
 
   return (
@@ -163,6 +195,24 @@ export default function SettingsScreen() {
               noBorder
             />
           </View>
+
+          <SectionTitle title="Danger Zone" />
+          <TouchableOpacity
+            style={styles.dangerSection}
+            onPress={handlePurgeVault}
+            activeOpacity={0.78}
+          >
+            <View style={styles.dangerIconWrap}>
+              <Feather name="trash-2" size={18} color={theme.colors.danger} />
+            </View>
+            <View style={styles.rowCopy}>
+              <Text style={styles.dangerTitle}>Purge Vault</Text>
+              <Text style={styles.dangerSubtitle}>
+                Permanently delete all {cardCount} card{cardCount !== 1 ? 's' : ''}. This cannot be undone.
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={theme.colors.danger} style={{ opacity: 0.6 }} />
+          </TouchableOpacity>
 
           <View style={styles.footerNote}>
             <Feather name="clock" size={16} color={theme.colors.textSubtle} />
@@ -258,6 +308,36 @@ const styles = StyleSheet.create({
   },
   rowSubtitle: {
     color: theme.colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  dangerSection: {
+    backgroundColor: 'rgba(232, 112, 112, 0.06)',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(232, 112, 112, 0.28)',
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  dangerIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(232, 112, 112, 0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dangerTitle: {
+    color: theme.colors.danger,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  dangerSubtitle: {
+    color: 'rgba(232, 112, 112, 0.7)',
     fontSize: 13,
     lineHeight: 18,
   },

@@ -42,6 +42,8 @@ export default function CardDetailScreen() {
   const clipboardTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toastOpacity = useRef(new Animated.Value(0)).current;
+  const numberProgress = useRef(new Animated.Value(1)).current;
+  const cvvProgress = useRef(new Animated.Value(1)).current;
 
   const showToast = useCallback(
     (field: string) => {
@@ -79,14 +81,32 @@ export default function CardDetailScreen() {
 
   const handleRevealCVV = () => {
     setShowCVV(true);
+    cvvProgress.setValue(1);
+    Animated.timing(cvvProgress, {
+      toValue: 0,
+      duration: REVEAL_DURATION_MS,
+      useNativeDriver: false,
+    }).start();
     if (cvvTimer.current) clearTimeout(cvvTimer.current);
-    cvvTimer.current = setTimeout(() => setShowCVV(false), REVEAL_DURATION_MS);
+    cvvTimer.current = setTimeout(() => {
+      setShowCVV(false);
+      cvvProgress.setValue(1);
+    }, REVEAL_DURATION_MS);
   };
 
   const handleRevealNumber = () => {
     setShowNumber(true);
+    numberProgress.setValue(1);
+    Animated.timing(numberProgress, {
+      toValue: 0,
+      duration: REVEAL_DURATION_MS,
+      useNativeDriver: false,
+    }).start();
     if (numberTimer.current) clearTimeout(numberTimer.current);
-    numberTimer.current = setTimeout(() => setShowNumber(false), REVEAL_DURATION_MS);
+    numberTimer.current = setTimeout(() => {
+      setShowNumber(false);
+      numberProgress.setValue(1);
+    }, REVEAL_DURATION_MS);
   };
 
   const handleCopyCardNumber = async () => {
@@ -160,15 +180,17 @@ export default function CardDetailScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.cardWrapper}>
-            <CardView card={card} showCVV={showCVV} />
+            <CardView card={card} showCVV={showCVV} showNumber={showNumber} />
           </View>
 
           <View style={styles.infoSection}>
             <InfoRow label="Cardholder" value={card.name} />
-            <InfoRow
+            <InteractiveInfoRow
               label="Card Number"
               value={showNumber ? formatCardNumber(card.cardNumber) : maskCardNumber(card.cardNumber)}
-              mono
+              revealed={showNumber}
+              progress={numberProgress}
+              onPress={handleCopyCardNumber}
             />
             {card.validFromMonth && card.validFromYear ? (
               <InfoRow
@@ -180,30 +202,18 @@ export default function CardDetailScreen() {
               label="Expiry"
               value={formatExpiry(card.expiryMonth, card.expiryYear)}
             />
-            <InfoRow
+            <InteractiveInfoRow
               label="CVV"
               value={showCVV ? card.cvv : card.cvv.length === 4 ? '••••' : '•••'}
+              revealed={showCVV}
+              progress={cvvProgress}
+              onPress={handleCopyCVV}
               mono
             />
             {card.bankName ? <InfoRow label="Bank" value={card.bankName} /> : null}
             {card.cardType ? <InfoRow label="Card Type" value={card.cardType} /> : null}
             {card.nickname ? <InfoRow label="Nickname" value={card.nickname} /> : null}
             <InfoRow label="Card Brand" value={getBrandDisplayName(card.brand, card.customBrandName)} />
-          </View>
-
-          <View style={styles.actionsGrid}>
-            <ActionButton
-              icon={showNumber ? 'copy' : 'eye'}
-              label={showNumber ? 'Copy Number' : 'Reveal Number'}
-              onPress={handleCopyCardNumber}
-              accent={showNumber}
-            />
-            <ActionButton
-              icon={showCVV ? 'copy' : 'eye'}
-              label={showCVV ? 'Copy CVV' : 'Reveal CVV'}
-              onPress={handleCopyCVV}
-              accent={showCVV}
-            />
           </View>
         </ScrollView>
 
@@ -253,33 +263,61 @@ function InfoRow({
   );
 }
 
-function ActionButton({
-  icon,
+function InteractiveInfoRow({
   label,
+  value,
+  revealed,
+  progress,
   onPress,
-  accent = false,
+  mono = true,
 }: {
-  icon: React.ComponentProps<typeof Feather>['name'];
   label: string;
+  value: string;
+  revealed: boolean;
+  progress: Animated.Value;
   onPress: () => void;
-  accent?: boolean;
+  mono?: boolean;
 }) {
   return (
     <TouchableOpacity
-      style={[styles.actionButton, accent && styles.actionButtonAccent]}
+      style={styles.interactiveRow}
       onPress={onPress}
-      activeOpacity={0.82}
+      activeOpacity={0.72}
     >
-      <View style={[styles.actionIconWrap, accent && styles.actionIconWrapAccent]}>
-        <Feather
-          name={icon}
-          size={18}
-          color={accent ? theme.colors.primaryInk : theme.colors.primary}
-        />
+      <Text style={styles.infoLabel}>{label}</Text>
+
+      <View style={styles.interactiveRight}>
+        <Text style={[styles.infoValue, mono && styles.monoValue]} numberOfLines={1}>
+          {value}
+        </Text>
+
+        <View style={[styles.actionPill, revealed && styles.actionPillRevealed]}>
+          <Feather
+            name={revealed ? 'copy' : 'eye'}
+            size={11}
+            color={revealed ? theme.colors.primary : theme.colors.textMuted}
+          />
+          <Text style={[styles.actionPillText, revealed && styles.actionPillTextRevealed]}>
+            {revealed ? 'Copy' : 'Reveal'}
+          </Text>
+        </View>
       </View>
-      <Text style={[styles.actionLabel, accent && styles.actionLabelAccent]}>
-        {label}
-      </Text>
+
+      {revealed && (
+        <View style={styles.progressTrack}>
+          <Animated.View
+            style={[
+              styles.progressFill,
+              {
+                width: progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0%', '100%'],
+                }),
+              },
+            ]}
+          />
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -298,7 +336,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   container: {
-    padding: 20,
+    padding: 10,
     paddingBottom: 20,
     gap: 18,
   },
@@ -318,45 +356,6 @@ const styles = StyleSheet.create({
   cardWrapper: {
     alignItems: 'center',
   },
-  actionsGrid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  actionButton: {
-    flex: 1,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    gap: 6,
-  },
-  actionButtonAccent: {
-    backgroundColor: theme.colors.primarySoft,
-    borderColor: theme.colors.borderStrong,
-  },
-  actionIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionIconWrapAccent: {
-    backgroundColor: theme.colors.primary,
-  },
-  actionLabel: {
-    color: theme.colors.text,
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  actionLabelAccent: {
-    color: theme.colors.primary,
-  },
   infoSection: {
     backgroundColor: theme.colors.surface,
     borderRadius: 22,
@@ -374,6 +373,62 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
     gap: 12,
   },
+  interactiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    gap: 12,
+    position: 'relative',
+  },
+  interactiveRight: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
+  progressTrack: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1.5,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: theme.colors.primary,
+    opacity: 0.5,
+  },
+  actionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 28,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.colors.borderStrong,
+    backgroundColor: theme.colors.surface,
+  },
+  actionPillRevealed: {
+    borderColor: 'rgba(184,184,184,0.4)',
+    backgroundColor: theme.colors.primarySoft,
+  },
+  actionPillText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  actionPillTextRevealed: {
+    color: theme.colors.primary,
+  },
   infoLabel: {
     color: theme.colors.textMuted,
     fontSize: 14,
@@ -384,7 +439,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     textAlign: 'right',
-    flex: 2,
   },
   monoValue: {
     fontVariant: ['tabular-nums'],

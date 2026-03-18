@@ -349,6 +349,13 @@ export default function AddCardScreen() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
+  const isFormValid =
+    name.trim().length > 0 &&
+    cardNumber.replace(/\D/g, '').length >= 13 &&
+    expiryMonth.length > 0 &&
+    expiryYear.length > 0 &&
+    cvv.trim().length > 0;
+
   return (
     <>
       {cameraOpen ? (
@@ -406,13 +413,10 @@ export default function AddCardScreen() {
       ) : (
         <AppBackground>
           <SafeAreaView style={styles.safe} edges={['bottom']}>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={styles.flex}
-            >
               <ScrollView
                 contentContainerStyle={styles.form}
                 keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
               >
                 <TouchableOpacity
                   style={styles.scanButton}
@@ -423,7 +427,7 @@ export default function AddCardScreen() {
                   <Text style={styles.scanButtonText}>Scan card with camera</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.orDivider}>Manual details</Text>
+                <Text style={styles.orDivider}>Details</Text>
 
                 <CardBrandPicker
                   value={selectedBrand}
@@ -440,6 +444,7 @@ export default function AddCardScreen() {
                   onChangeText={setName}
                   placeholder="JOHN SMITH"
                   autoCapitalize="characters"
+                  required
                 />
 
                 <Field
@@ -449,6 +454,7 @@ export default function AddCardScreen() {
                   placeholder={isAmex ? '3782 822463 10005' : '4242 4242 4242 4242'}
                   keyboardType="number-pad"
                   maxLength={cardNumberMaxLength(isAmex)}
+                  required
                 />
 
                 <View style={styles.row}>
@@ -460,6 +466,7 @@ export default function AddCardScreen() {
                       placeholder="MM"
                       keyboardType="number-pad"
                       maxLength={2}
+                      required
                     />
                   </View>
                   <View style={styles.rowField}>
@@ -470,6 +477,7 @@ export default function AddCardScreen() {
                       placeholder="YY"
                       keyboardType="number-pad"
                       maxLength={2}
+                      required
                     />
                   </View>
                 </View>
@@ -496,6 +504,7 @@ export default function AddCardScreen() {
                       <Text style={styles.fieldAccessoryText}>{showCvv ? 'Hide' : 'Show'}</Text>
                     </TouchableOpacity>
                   }
+                  required
                 />
 
                 <Field
@@ -557,17 +566,21 @@ export default function AddCardScreen() {
                 ) : null}
               </ScrollView>
 
-              <View style={styles.saveFooter}>
-                <ThemedButton
-                  title="Save Card"
-                  onPress={handleSave}
-                  loading={saving}
-                  icon={
-                    <Feather name="check" size={18} color={theme.colors.primaryInk} />
-                  }
-                />
-              </View>
-            </KeyboardAvoidingView>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              >
+                <View style={styles.saveFooter}>
+                  <ThemedButton
+                    title="Save Card"
+                    onPress={handleSave}
+                    loading={saving}
+                    disabled={!isFormValid}
+                    icon={
+                      <Feather name="check" size={18} color={theme.colors.primaryInk} />
+                    }
+                  />
+                </View>
+              </KeyboardAvoidingView>
           </SafeAreaView>
         </AppBackground>
       )}
@@ -589,6 +602,7 @@ interface FieldProps {
   secureTextEntry?: boolean;
   autoCapitalize?: 'none' | 'words' | 'sentences' | 'characters';
   trailingAccessory?: React.ReactNode;
+  required?: boolean;
 }
 
 function Field({
@@ -601,10 +615,14 @@ function Field({
   secureTextEntry,
   autoCapitalize,
   trailingAccessory,
+  required,
 }: FieldProps) {
   return (
     <View style={styles.fieldContainer}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={styles.fieldLabel}>
+        {label}
+        {required ? <Text style={styles.fieldRequired}> *</Text> : null}
+      </Text>
       <View style={styles.fieldInputWrap}>
         <TextInput
           style={[styles.fieldInput, trailingAccessory ? styles.fieldInputWithAccessory : null]}
@@ -630,12 +648,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  flex: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
   form: {
-    padding: 20,
+    padding: 15,
     paddingBottom: 20,
     gap: 16,
   },
@@ -693,6 +707,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
+  },
+  fieldRequired: {
+    color: '#FF4444',
+    fontWeight: '700',
   },
   fieldInput: {
     flex: 1,

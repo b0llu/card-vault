@@ -455,13 +455,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     paddingTop: 0,
     paddingBottom: 75,
   },
   listEmptyState: {
     flexGrow: 1,
-    paddingBottom: 90,
+    paddingBottom: 75,
   },
   separator: {
     height: 14,
@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingBottom: 32,
   },
   footerGradient: {
