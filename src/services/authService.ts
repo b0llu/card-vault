@@ -240,7 +240,7 @@ export async function setBiometricsEnabled(enabled: boolean): Promise<void> {
  */
 export async function authenticateWithBiometrics(): Promise<boolean> {
   const result = await LocalAuthentication.authenticateAsync({
-    promptMessage: 'Unlock Secure Card Vault',
+    promptMessage: 'Unlock Card Vault',
     fallbackLabel: 'Use PIN',
     cancelLabel: 'Cancel',
     disableDeviceFallback: false,

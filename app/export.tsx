@@ -96,7 +96,7 @@ export default function ExportScreen() {
     try {
       await Sharing.shareAsync(savedPath, {
         mimeType: 'application/octet-stream',
-        dialogTitle: 'Save Secure Vault Backup',
+        dialogTitle: 'Save Card Vault Backup',
         UTI: 'public.data',
       });
     } catch {
