@@ -166,7 +166,7 @@ export default function CardDetailScreen() {
             {card.bankName ? <InfoRow label="Bank" value={card.bankName} /> : null}
             {card.cardType ? <InfoRow label="Card Type" value={card.cardType} /> : null}
             {card.nickname ? <InfoRow label="Nickname" value={card.nickname} /> : null}
-            <InfoRow label="Card Brand" value={getBrandDisplayName(card.brand, card.customBrandName)} />
+            <InfoRow hideBottomBorder label="Card Brand" value={getBrandDisplayName(card.brand, card.customBrandName)} />
           </View>
         </ScrollView>
 
@@ -208,10 +208,12 @@ function InfoRow({
   label,
   value,
   mono = false,
+  hideBottomBorder = false,
 }: {
   label: string;
   value: string;
   mono?: boolean;
+  hideBottomBorder?: boolean;
 }) {
   return (
     <View style={styles.infoRow}>

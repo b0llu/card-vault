@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingTop: 14,
     paddingBottom: 12,
   },
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   groupingBarContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingTop: 2,
     paddingBottom: 10,
     gap: 8,
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
   },
   groupingPill: {
     height: 36,
-    paddingHorizontal: 14,
+    paddingHorizontal: 15,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: theme.colors.border,

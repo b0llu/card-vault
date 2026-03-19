@@ -261,7 +261,7 @@ function SettingRow({
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: 10,
     paddingBottom: 40,
     gap: 14,
   },

@@ -187,8 +187,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 10,
+    paddingBottom: 20,
     gap: 14,
   },
   hero: {
