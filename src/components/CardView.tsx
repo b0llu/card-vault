@@ -56,19 +56,19 @@ export const CardView: React.FC<CardViewProps> = ({
               },
             ]}
           >
-            <Text style={[styles.nickname, { color: appearance.accent }]}>
+            <Text style={[styles.nickname, { color: appearance.accent }]} allowFontScaling={false} numberOfLines={1}>
               {card.nickname}
             </Text>
           </View>
         ) : <View />}
-        <Text style={[styles.brandLabel, { color: appearance.accent }]}>
+        <Text style={[styles.brandLabel, { color: appearance.accent }]} allowFontScaling={false} numberOfLines={1}>
           {brandLabel}
         </Text>
       </View>
 
       <View style={styles.metaRow}>
         {card.bankName ? (
-          <Text style={[styles.bankName, { color: appearance.mutedText }]} numberOfLines={1}>
+          <Text style={[styles.bankName, { color: appearance.mutedText }]} numberOfLines={1} allowFontScaling={false}>
             {card.bankName}
           </Text>
         ) : null}
@@ -84,30 +84,30 @@ export const CardView: React.FC<CardViewProps> = ({
       </View>
 
       {/* Card number */}
-      <Text style={[styles.cardNumber, { color: appearance.text }]}>
+      <Text style={[styles.cardNumber, { color: appearance.text }]} allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit>
         {showNumber ? formatCardNumber(card.cardNumber) : maskCardNumber(card.cardNumber)}
       </Text>
 
       {/* Footer row */}
       <View style={styles.footer}>
         <View style={styles.footerCol}>
-          <Text style={[styles.footerLabel, { color: appearance.labelText }]}>CARD HOLDER</Text>
-          <Text style={[styles.footerValue, { color: appearance.text }]} numberOfLines={1}>
+          <Text style={[styles.footerLabel, { color: appearance.labelText }]} allowFontScaling={false}>CARD HOLDER</Text>
+          <Text style={[styles.footerValue, { color: appearance.text }]} numberOfLines={1} allowFontScaling={false}>
             {card.name || '—'}
           </Text>
         </View>
 
         <View style={styles.footerCol}>
-          <Text style={[styles.footerLabel, { color: appearance.labelText }]}>EXPIRES</Text>
-          <Text style={[styles.footerValue, { color: appearance.text }]}>
+          <Text style={[styles.footerLabel, { color: appearance.labelText }]} allowFontScaling={false}>EXPIRES</Text>
+          <Text style={[styles.footerValue, { color: appearance.text }]} allowFontScaling={false}>
             {formatExpiry(card.expiryMonth, card.expiryYear)}
           </Text>
         </View>
 
         {showCVV && (
           <View style={styles.footerCol}>
-            <Text style={[styles.footerLabel, { color: appearance.labelText }]}>CVV</Text>
-            <Text style={[styles.footerValue, { color: appearance.text }]}>{card.cvv}</Text>
+            <Text style={[styles.footerLabel, { color: appearance.labelText }]} allowFontScaling={false}>CVV</Text>
+            <Text style={[styles.footerValue, { color: appearance.text }]} allowFontScaling={false}>{card.cvv}</Text>
           </View>
         )}
       </View>

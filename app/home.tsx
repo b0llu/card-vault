@@ -414,7 +414,7 @@ function CardListItem({ item, onNavigate }: { item: Card; onNavigate: () => void
 
         {/* Brand + nickname */}
         <View style={styles.cardRowTop}>
-          <Text style={[styles.cardBrand, { color: appearance.mutedText }]}>
+          <Text style={[styles.cardBrand, { color: appearance.mutedText }]} allowFontScaling={false} numberOfLines={1}>
             {brandLabel}
           </Text>
           {item.nickname ? (
@@ -427,7 +427,7 @@ function CardListItem({ item, onNavigate }: { item: Card; onNavigate: () => void
                 },
               ]}
             >
-              <Text style={[styles.cardNicknamePillText, { color: appearance.text }]}>
+              <Text style={[styles.cardNicknamePillText, { color: appearance.text }]} allowFontScaling={false}>
                 {item.nickname}
               </Text>
             </View>
@@ -436,7 +436,7 @@ function CardListItem({ item, onNavigate }: { item: Card; onNavigate: () => void
 
         {/* Card number + copy icon */}
         <View style={styles.cardNumberRow}>
-          <Text style={[styles.cardNumber, { color: appearance.text }]} numberOfLines={1}>
+          <Text style={[styles.cardNumber, { color: appearance.text }]} numberOfLines={1} allowFontScaling={false} adjustsFontSizeToFit>
             {revealed ? formatCardNumber(item.cardNumber) : maskCardNumber(item.cardNumber)}
           </Text>
           <TouchableOpacity
@@ -464,9 +464,9 @@ function CardListItem({ item, onNavigate }: { item: Card; onNavigate: () => void
         {/* CVV + EXP unified metadata row */}
         <View style={styles.cardDataRow}>
           <View style={styles.cardDataItem}>
-            <Text style={[styles.cardDataLabel, { color: appearance.mutedText }]}>CVV</Text>
+            <Text style={[styles.cardDataLabel, { color: appearance.mutedText }]} allowFontScaling={false}>CVV</Text>
             <View style={styles.cardDataValueRow}>
-              <Text style={[styles.cardDataValue, { color: revealed ? appearance.text : appearance.mutedText }]}>
+              <Text style={[styles.cardDataValue, { color: revealed ? appearance.text : appearance.mutedText }]} allowFontScaling={false}>
                 {revealed ? item.cvv : item.cvv.length === 4 ? '••••' : '•••'}
               </Text>
               <TouchableOpacity
@@ -495,8 +495,8 @@ function CardListItem({ item, onNavigate }: { item: Card; onNavigate: () => void
           <View style={[styles.cardDataDivider, { backgroundColor: appearance.mutedText, opacity: 0.25 }]} />
 
           <View style={styles.cardDataItem}>
-            <Text style={[styles.cardDataLabel, { color: appearance.mutedText }]}>EXP</Text>
-            <Text style={[styles.cardDataValue, { color: appearance.text }]}>
+            <Text style={[styles.cardDataLabel, { color: appearance.mutedText }]} allowFontScaling={false}>EXP</Text>
+            <Text style={[styles.cardDataValue, { color: appearance.text }]} allowFontScaling={false}>
               {formatExpiry(item.expiryMonth, item.expiryYear)}
             </Text>
           </View>
@@ -505,11 +505,11 @@ function CardListItem({ item, onNavigate }: { item: Card; onNavigate: () => void
         {/* Footer */}
         <View style={styles.cardFooter}>
           <View style={styles.cardFooterCopy}>
-            <Text style={[styles.cardFooterName, { color: appearance.text }]} numberOfLines={1}>
+            <Text style={[styles.cardFooterName, { color: appearance.text }]} numberOfLines={1} allowFontScaling={false}>
               {item.name}
             </Text>
             {item.bankName ? (
-              <Text style={[styles.cardFooterMeta, { color: appearance.mutedText }]} numberOfLines={1}>
+              <Text style={[styles.cardFooterMeta, { color: appearance.mutedText }]} numberOfLines={1} allowFontScaling={false}>
                 {item.bankName}
               </Text>
             ) : null}
@@ -534,7 +534,7 @@ function CardListItem({ item, onNavigate }: { item: Card; onNavigate: () => void
               size={12}
               color={revealed ? appearance.text : appearance.mutedText}
             />
-            <Text style={[styles.revealPillText, { color: revealed ? appearance.text : appearance.mutedText }]}>
+            <Text style={[styles.revealPillText, { color: revealed ? appearance.text : appearance.mutedText }]} allowFontScaling={false}>
               {revealed ? 'Hide' : 'Reveal'}
             </Text>
           </TouchableOpacity>

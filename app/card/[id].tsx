@@ -217,8 +217,8 @@ function InfoRow({
 }) {
   return (
     <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={[styles.infoValue, mono && styles.monoValue]}>{value}</Text>
+      <Text style={styles.infoLabel} allowFontScaling={false} numberOfLines={1}>{label}</Text>
+      <Text style={[styles.infoValue, mono && styles.monoValue]} allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
     </View>
   );
 }
@@ -252,10 +252,10 @@ function CopyInfoRow({
       accessibilityRole="button"
       accessibilityLabel={`Copy ${label}`}
     >
-      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoLabel} allowFontScaling={false} numberOfLines={1}>{label}</Text>
 
       <View style={styles.interactiveRight}>
-        <Text style={[styles.infoValue, mono && styles.monoValue]} numberOfLines={1}>
+        <Text style={[styles.infoValue, mono && styles.monoValue]} numberOfLines={1} allowFontScaling={false} adjustsFontSizeToFit>
           {value}
         </Text>
 

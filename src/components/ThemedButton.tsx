@@ -54,7 +54,7 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
       ) : (
         <>
           {icon}
-          <Text style={[styles.text, styles[`${variant}Text`], textStyle]}>
+          <Text style={[styles.text, styles[`${variant}Text`], textStyle]} allowFontScaling={false}>
             {title}
           </Text>
         </>
