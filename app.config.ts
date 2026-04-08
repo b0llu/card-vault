@@ -57,6 +57,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Pin android.kotlinVersion so expo-modules-core picks the Compose compiler
     // version that matches react-native's kotlin-gradle-plugin (1.9.24).
     './plugins/withKotlinVersion',
+    // Enable Proguard minification and resource shrinking for release builds.
+    './plugins/withReleaseOptimizations',
   ],
   experiments: {
     typedRoutes: true,
