@@ -10,8 +10,11 @@
 const { withGradleProperties } = require('@expo/config-plugins');
 
 const OPTIMIZATION_PROPERTIES = [
-  { key: 'android.enableProguardInReleaseBuilds', value: 'true' },
-  { key: 'android.enableShrinkResourcesInReleaseBuilds', value: 'true' },
+  // Proguard is disabled: it strips FabricUIManager.mBinding which is accessed
+  // from C++ via JNI (not Java reflection), breaking the New Architecture at runtime.
+  // Security comes from AES-256/PBKDF2 encryption, not code obfuscation.
+  { key: 'android.enableProguardInReleaseBuilds', value: 'false' },
+  { key: 'android.enableShrinkResourcesInReleaseBuilds', value: 'false' },
 ];
 
 const withReleaseOptimizations = (config) => {
